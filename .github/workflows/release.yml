@@ -1,0 +1,31 @@
+# Build and attach binaries when a GitHub Release is published.
+# Criar um release em: https://github.com/JaimeJunr/MYSYSTEM/releases/new
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Build
+        run: |
+          for pair in "linux/amd64" "linux/arm64"; do
+            GOOS="${pair%/*}" GOARCH="${pair#*/}" go build -o "mysystem-${pair%/*}-${pair#*/}" ./cmd/mysystem
+          done
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: mysystem-linux-amd64 mysystem-linux-arm64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

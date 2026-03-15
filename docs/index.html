@@ -1,221 +1,307 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MySystem — Gerenciador de Sistema</title>
-  <meta name="description" content="CLI para manter, configurar e migrar seu Linux. Limpeza, instaladores e wizard Zsh com Go e Charm.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      /* Cores do design MySystem (TUI Lipgloss) */
-      --mysystem-magenta: #ff5faf;   /* 205 - títulos, cursor */
-      --mysystem-gray: #626262;      /* 241 - subtítulos, ajuda */
-      --mysystem-green: #00c853;     /* 10  - sucesso, seleção */
-      --mysystem-accent: #5f5faf;   /* 63  - bordas, destaque */
-      --mysystem-cream: #ffffd7;     /* 230 - texto em destaque */
-      --mysystem-bg: #0d1117;
-      --mysystem-bg-soft: #161b22;
-      --mysystem-border: #30363d;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MySystem — Gerenciador de Sistema</title>
+    <meta
+      name="description"
+      content="CLI para manter, configurar e migrar seu Linux. Limpeza, instaladores e wizard Zsh com Go e Charm."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        /* Cores do design MySystem (TUI Lipgloss) */
+        --mysystem-magenta: #ff5faf; /* 205 - títulos, cursor */
+        --mysystem-gray: #626262; /* 241 - subtítulos, ajuda */
+        --mysystem-green: #00c853; /* 10  - sucesso, seleção */
+        --mysystem-accent: #5f5faf; /* 63  - bordas, destaque */
+        --mysystem-cream: #ffffd7; /* 230 - texto em destaque */
+        --mysystem-bg: #0d1117;
+        --mysystem-bg-soft: #161b22;
+        --mysystem-border: #30363d;
+      }
 
-    * {
-      box-sizing: border-box;
-    }
+      * {
+        box-sizing: border-box;
+      }
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: var(--mysystem-bg);
-      color: #c9d1d9;
-      font-family: 'Space Grotesk', system-ui, sans-serif;
-      font-size: 1.05rem;
-      line-height: 1.6;
-    }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: var(--mysystem-bg);
+        color: #c9d1d9;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-size: 1.05rem;
+        line-height: 1.6;
+      }
 
-    .wrap {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 2rem 1.5rem 4rem;
-    }
+      .wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 4rem;
+      }
 
-    header {
-      text-align: center;
-      padding: 4rem 0 3rem;
-      border-bottom: 1px solid var(--mysystem-border);
-    }
+      header {
+        text-align: center;
+        padding: 4rem 0 3rem;
+        border-bottom: 1px solid var(--mysystem-border);
+      }
 
-    h1 {
-      font-size: 2.25rem;
-      font-weight: 700;
-      color: var(--mysystem-magenta);
-      margin: 0 0 0.5rem;
-      letter-spacing: -0.02em;
-    }
+      h1 {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: var(--mysystem-magenta);
+        margin: 0 0 0.5rem;
+        letter-spacing: -0.02em;
+      }
 
-    .tagline {
-      color: var(--mysystem-gray);
-      font-size: 1.15rem;
-      margin: 0;
-    }
+      .tagline {
+        color: var(--mysystem-gray);
+        font-size: 1.15rem;
+        margin: 0;
+      }
 
-    .badge {
-      display: inline-block;
-      margin-top: 1rem;
-      padding: 0.35rem 0.75rem;
-      background: var(--mysystem-bg-soft);
-      border: 1px solid var(--mysystem-accent);
-      border-radius: 6px;
-      color: var(--mysystem-cream);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-    }
+      .badge {
+        display: inline-block;
+        margin-top: 1rem;
+        padding: 0.35rem 0.75rem;
+        background: var(--mysystem-bg-soft);
+        border: 1px solid var(--mysystem-accent);
+        border-radius: 6px;
+        color: var(--mysystem-cream);
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.85rem;
+      }
 
-    section {
-      padding: 2.5rem 0;
-    }
+      section {
+        padding: 2.5rem 0;
+      }
 
-    section h2 {
-      font-size: 1.35rem;
-      font-weight: 600;
-      color: var(--mysystem-magenta);
-      margin: 0 0 1rem;
-    }
+      section h2 {
+        font-size: 1.35rem;
+        font-weight: 600;
+        color: var(--mysystem-magenta);
+        margin: 0 0 1rem;
+      }
 
-    section p {
-      margin: 0 0 1rem;
-      color: #8b949e;
-    }
+      section p {
+        margin: 0 0 1rem;
+        color: #8b949e;
+      }
 
-    ul.features {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
+      ul.features {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
 
-    ul.features li {
-      padding: 0.5rem 0;
-      padding-left: 1.5rem;
-      position: relative;
-      color: #8b949e;
-    }
+      ul.features li {
+        padding: 0.5rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+        color: #8b949e;
+      }
 
-    ul.features li::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0.75rem;
-      width: 6px;
-      height: 6px;
-      background: var(--mysystem-green);
-      border-radius: 50%;
-    }
+      ul.features li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.75rem;
+        width: 6px;
+        height: 6px;
+        background: var(--mysystem-green);
+        border-radius: 50%;
+      }
 
-    ul.features strong {
-      color: var(--mysystem-cream);
-    }
+      ul.features strong {
+        color: var(--mysystem-cream);
+      }
 
-    pre, code {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.9rem;
-    }
+      pre,
+      code {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 0.9rem;
+      }
 
-    pre {
-      background: var(--mysystem-bg-soft);
-      border: 1px solid var(--mysystem-border);
-      border-radius: 8px;
-      padding: 1rem 1.25rem;
-      overflow-x: auto;
-      margin: 1rem 0;
-    }
+      pre {
+        background: var(--mysystem-bg-soft);
+        border: 1px solid var(--mysystem-border);
+        border-radius: 8px;
+        padding: 1rem 1.25rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+      }
 
-    code {
-      color: var(--mysystem-magenta);
-      padding: 0.15em 0.4em;
-      border-radius: 4px;
-      background: var(--mysystem-bg-soft);
-    }
+      code {
+        color: var(--mysystem-magenta);
+        padding: 0.15em 0.4em;
+        border-radius: 4px;
+        background: var(--mysystem-bg-soft);
+      }
 
-    pre code {
-      padding: 0;
-      background: none;
-      color: #c9d1d9;
-    }
+      pre code {
+        padding: 0;
+        background: none;
+        color: #c9d1d9;
+      }
 
-    a {
-      color: var(--mysystem-accent);
-      text-decoration: none;
-    }
+      a {
+        color: var(--mysystem-accent);
+        text-decoration: none;
+      }
 
-    a:hover {
-      text-decoration: underline;
-    }
+      a:hover {
+        text-decoration: underline;
+      }
 
-    footer {
-      margin-top: 3rem;
-      padding-top: 2rem;
-      border-top: 1px solid var(--mysystem-border);
-      text-align: center;
-      color: var(--mysystem-gray);
-      font-size: 0.9rem;
-    }
+      footer {
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid var(--mysystem-border);
+        text-align: center;
+        color: var(--mysystem-gray);
+        font-size: 0.9rem;
+      }
 
-    footer a {
-      color: var(--mysystem-magenta);
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <h1>MySystem</h1>
-      <p class="tagline">Gerenciador de sistema em terminal — limpeza, instaladores e configuração Zsh</p>
-      <span class="badge">Go · Bubbletea · Charm</span>
-    </header>
+      footer a {
+        color: var(--mysystem-magenta);
+      }
 
-    <section>
-      <h2>O que é</h2>
-      <p>
-        MySystem reúne scripts de limpeza, instaladores de ferramentas e o assistente de configuração Zsh
-        numa única interface no terminal. Pensado para manter a máquina em ordem e configurar o shell
-        em poucos passos.
-      </p>
-    </section>
+      .install-option {
+        margin: 1.5rem 0;
+        padding: 1.25rem;
+        background: var(--mysystem-bg-soft);
+        border: 1px solid var(--mysystem-border);
+        border-radius: 8px;
+      }
 
-    <section>
-      <h2>Funcionalidades</h2>
-      <ul class="features">
-        <li><strong>Limpeza</strong> — Scripts para caches (Docker, npm, apt) e detecção de arquivos grandes</li>
-        <li><strong>Monitoramento</strong> — Bateria e uso de memória</li>
-        <li><strong>Instaladores</strong> — IDEs (Cursor, Claude Code) e ferramentas a partir de uma lista curada</li>
-        <li><strong>Wizard Zsh</strong> — Passo a passo: Zsh, Oh My Zsh, Powerlevel10k, plugins e ferramentas (NVM, Bun, etc.)</li>
-        <li><strong>TUI</strong> — Interface no terminal com Bubbletea e Lipgloss</li>
-      </ul>
-    </section>
+      .install-option h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--mysystem-cream);
+        margin: 0 0 0.5rem;
+      }
 
-    <section>
-      <h2>Instalação</h2>
-      <p>Requisitos: Go 1.21+ e Linux (Ubuntu/Debian recomendado).</p>
-      <pre><code>git clone https://github.com/JaimeJunr/MYSYSTEM
+      .install-option p {
+        margin: 0 0 0.75rem;
+      }
+
+      .btn-download {
+        display: inline-block;
+        padding: 0.6rem 1.25rem;
+        background: var(--mysystem-accent);
+        color: var(--mysystem-cream);
+        border-radius: 6px;
+        font-weight: 600;
+        text-decoration: none;
+        margin-top: 0.25rem;
+      }
+
+      .btn-download:hover {
+        filter: brightness(1.15);
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>MySystem</h1>
+        <p class="tagline">
+          Gerenciador de sistema em terminal — limpeza, instaladores e
+          configuração Zsh
+        </p>
+        <span class="badge">Go · Bubbletea · Charm</span>
+      </header>
+
+      <section>
+        <h2>O que é</h2>
+        <p>
+          MySystem reúne scripts de limpeza, instaladores de ferramentas e o
+          assistente de configuração Zsh numa única interface no terminal.
+          Pensado para manter a máquina em ordem e configurar o shell em poucos
+          passos.
+        </p>
+      </section>
+
+      <section>
+        <h2>Funcionalidades</h2>
+        <ul class="features">
+          <li>
+            <strong>Limpeza</strong> — Scripts para caches (Docker, npm, apt) e
+            detecção de arquivos grandes
+          </li>
+          <li><strong>Monitoramento</strong> — Bateria e uso de memória</li>
+          <li>
+            <strong>Instaladores</strong> — IDEs (Cursor, Claude Code) e
+            ferramentas a partir de uma lista curada
+          </li>
+          <li>
+            <strong>Wizard Zsh</strong> — Passo a passo: Zsh, Oh My Zsh,
+            Powerlevel10k, plugins e ferramentas (NVM, Bun, etc.)
+          </li>
+          <li>
+            <strong>TUI</strong> — Interface no terminal com Bubbletea e
+            Lipgloss
+          </li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Instalação</h2>
+
+        <div class="install-option">
+          <h3>Opção 1 — Baixar binário (recomendado)</h3>
+          <p>
+            Linux (amd64 ou arm64). Os binários são gerados automaticamente em
+            cada
+            <a href="https://github.com/JaimeJunr/MYSYSTEM/releases">release</a
+            >. Baixe, dê permissão e coloque no PATH.
+          </p>
+          <a
+            href="https://github.com/JaimeJunr/MYSYSTEM/releases/latest"
+            class="btn-download"
+            >Baixar na página de Releases</a
+          >
+          <pre><code># Exemplo (arquivos: mysystem-linux-amd64, mysystem-linux-arm64)
+chmod +x mysystem-linux-amd64
+sudo mv mysystem-linux-amd64 /usr/local/bin/mysystem
+mysystem</code></pre>
+        </div>
+
+        <div class="install-option">
+          <h3>Opção 2 — Compilar do código</h3>
+          <p>Requisitos: Go 1.21+ e Linux.</p>
+          <pre><code>git clone https://github.com/JaimeJunr/MYSYSTEM
 cd MYSYSTEM
 make install</code></pre>
-      <p>Ou execute direto: <code>make run</code></p>
-    </section>
+          <p>Ou execute direto: <code>make run</code></p>
+        </div>
+      </section>
 
-    <section>
-      <h2>Uso rápido</h2>
-      <p>↑/↓ ou j/k navegar · Espaço marcar · Enter confirmar · n ou → próximo · Esc voltar · q ou Ctrl+C sair</p>
-    </section>
+      <section>
+        <h2>Uso rápido</h2>
+        <p>
+          ↑/↓ ou j/k navegar · Espaço marcar · Enter confirmar · n ou → próximo
+          · Esc voltar · q ou Ctrl+C sair
+        </p>
+      </section>
 
-    <footer>
-      <p>
-        Código no <a href="https://github.com/JaimeJunr/MYSYSTEM">GitHub</a> ·
-        <a href="https://github.com/JaimeJunr/MYSYSTEM/tree/main/docs">docs/</a> ·
-        MIT
-      </p>
-    </footer>
-  </div>
-</body>
+      <footer>
+        <p>
+          Código no <a href="https://github.com/JaimeJunr/MYSYSTEM">GitHub</a> ·
+          <a href="https://github.com/JaimeJunr/MYSYSTEM/tree/main/docs"
+            >docs/</a
+          >
+          · MIT
+        </p>
+      </footer>
+    </div>
+  </body>
 </html>
