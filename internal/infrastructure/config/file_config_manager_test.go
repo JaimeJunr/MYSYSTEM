@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jaime/mysystem/internal/domain/entities"
-	"github.com/jaime/mysystem/internal/domain/interfaces"
-	"github.com/jaime/mysystem/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/domain/entities"
+	"github.com/JaimeJunr/Homestead/internal/domain/interfaces"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
 )
 
 // TestFileConfigManager_SaveConfig tests saving a configuration

@@ -5,12 +5,12 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jaime/mysystem/internal/app/services"
-	"github.com/jaime/mysystem/internal/infrastructure/config"
-	"github.com/jaime/mysystem/internal/infrastructure/executor"
-	"github.com/jaime/mysystem/internal/infrastructure/installer"
-	"github.com/jaime/mysystem/internal/infrastructure/repository"
-	"github.com/jaime/mysystem/internal/tui"
+	"github.com/JaimeJunr/Homestead/internal/app/services"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/config"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/executor"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/installer"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/repository"
+	"github.com/JaimeJunr/Homestead/internal/tui"
 )
 
 func main() {
@@ -42,7 +42,7 @@ func main() {
 
 	// Run the program
 	if _, err := p.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Erro ao executar MySystem: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Erro ao executar Homestead: %v\n", err)
 		os.Exit(1)
 	}
 }

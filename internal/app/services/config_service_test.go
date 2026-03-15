@@ -4,10 +4,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jaime/mysystem/internal/domain/entities"
-	"github.com/jaime/mysystem/internal/domain/interfaces"
-	"github.com/jaime/mysystem/internal/domain/types"
-	"github.com/jaime/mysystem/internal/infrastructure/config"
+	"github.com/JaimeJunr/Homestead/internal/domain/entities"
+	"github.com/JaimeJunr/Homestead/internal/domain/interfaces"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/config"
 )
 
 // TestConfigService_CreateConfig tests creating a new configuration

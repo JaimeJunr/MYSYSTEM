@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MySystem — Gerenciador de Sistema</title>
+    <title>Homestead — Gerenciador de Sistema</title>
     <meta
       name="description"
       content="CLI para manter, configurar e migrar seu Linux. Limpeza, instaladores e wizard Zsh com Go e Charm."
@@ -16,15 +16,15 @@
     />
     <style>
       :root {
-        /* Cores do design MySystem (TUI Lipgloss) */
-        --mysystem-magenta: #ff5faf; /* 205 - títulos, cursor */
-        --mysystem-gray: #626262; /* 241 - subtítulos, ajuda */
-        --mysystem-green: #00c853; /* 10  - sucesso, seleção */
-        --mysystem-accent: #5f5faf; /* 63  - bordas, destaque */
-        --mysystem-cream: #ffffd7; /* 230 - texto em destaque */
-        --mysystem-bg: #0d1117;
-        --mysystem-bg-soft: #161b22;
-        --mysystem-border: #30363d;
+        /* Cores do design Homestead (TUI Lipgloss) */
+        --homestead-magenta: #ff5faf; /* 205 - títulos, cursor */
+        --homestead-gray: #626262; /* 241 - subtítulos, ajuda */
+        --homestead-green: #00c853; /* 10  - sucesso, seleção */
+        --homestead-accent: #5f5faf; /* 63  - bordas, destaque */
+        --homestead-cream: #ffffd7; /* 230 - texto em destaque */
+        --homestead-bg: #0d1117;
+        --homestead-bg-soft: #161b22;
+        --homestead-border: #30363d;
       }
 
       * {
@@ -34,7 +34,7 @@
       body {
         margin: 0;
         min-height: 100vh;
-        background: var(--mysystem-bg);
+        background: var(--homestead-bg);
         color: #c9d1d9;
         font-family: "Space Grotesk", system-ui, sans-serif;
         font-size: 1.05rem;
@@ -50,19 +50,19 @@
       header {
         text-align: center;
         padding: 4rem 0 3rem;
-        border-bottom: 1px solid var(--mysystem-border);
+        border-bottom: 1px solid var(--homestead-border);
       }
 
       h1 {
         font-size: 2.25rem;
         font-weight: 700;
-        color: var(--mysystem-magenta);
+        color: var(--homestead-magenta);
         margin: 0 0 0.5rem;
         letter-spacing: -0.02em;
       }
 
       .tagline {
-        color: var(--mysystem-gray);
+        color: var(--homestead-gray);
         font-size: 1.15rem;
         margin: 0;
       }
@@ -71,10 +71,10 @@
         display: inline-block;
         margin-top: 1rem;
         padding: 0.35rem 0.75rem;
-        background: var(--mysystem-bg-soft);
-        border: 1px solid var(--mysystem-accent);
+        background: var(--homestead-bg-soft);
+        border: 1px solid var(--homestead-accent);
         border-radius: 6px;
-        color: var(--mysystem-cream);
+        color: var(--homestead-cream);
         font-family: "JetBrains Mono", monospace;
         font-size: 0.85rem;
       }
@@ -86,7 +86,7 @@
       section h2 {
         font-size: 1.35rem;
         font-weight: 600;
-        color: var(--mysystem-magenta);
+        color: var(--homestead-magenta);
         margin: 0 0 1rem;
       }
 
@@ -115,12 +115,12 @@
         top: 0.75rem;
         width: 6px;
         height: 6px;
-        background: var(--mysystem-green);
+        background: var(--homestead-green);
         border-radius: 50%;
       }
 
       ul.features strong {
-        color: var(--mysystem-cream);
+        color: var(--homestead-cream);
       }
 
       pre,
@@ -130,8 +130,8 @@
       }
 
       pre {
-        background: var(--mysystem-bg-soft);
-        border: 1px solid var(--mysystem-border);
+        background: var(--homestead-bg-soft);
+        border: 1px solid var(--homestead-border);
         border-radius: 8px;
         padding: 1rem 1.25rem;
         overflow-x: auto;
@@ -139,10 +139,10 @@
       }
 
       code {
-        color: var(--mysystem-magenta);
+        color: var(--homestead-magenta);
         padding: 0.15em 0.4em;
         border-radius: 4px;
-        background: var(--mysystem-bg-soft);
+        background: var(--homestead-bg-soft);
       }
 
       pre code {
@@ -152,7 +152,7 @@
       }
 
       a {
-        color: var(--mysystem-accent);
+        color: var(--homestead-accent);
         text-decoration: none;
       }
 
@@ -163,28 +163,28 @@
       footer {
         margin-top: 3rem;
         padding-top: 2rem;
-        border-top: 1px solid var(--mysystem-border);
+        border-top: 1px solid var(--homestead-border);
         text-align: center;
-        color: var(--mysystem-gray);
+        color: var(--homestead-gray);
         font-size: 0.9rem;
       }
 
       footer a {
-        color: var(--mysystem-magenta);
+        color: var(--homestead-magenta);
       }
 
       .install-option {
         margin: 1.5rem 0;
         padding: 1.25rem;
-        background: var(--mysystem-bg-soft);
-        border: 1px solid var(--mysystem-border);
+        background: var(--homestead-bg-soft);
+        border: 1px solid var(--homestead-border);
         border-radius: 8px;
       }
 
       .install-option h3 {
         font-size: 1.1rem;
         font-weight: 600;
-        color: var(--mysystem-cream);
+        color: var(--homestead-cream);
         margin: 0 0 0.5rem;
       }
 
@@ -195,8 +195,8 @@
       .btn-download {
         display: inline-block;
         padding: 0.6rem 1.25rem;
-        background: var(--mysystem-accent);
-        color: var(--mysystem-cream);
+        background: var(--homestead-accent);
+        color: var(--homestead-cream);
         border-radius: 6px;
         font-weight: 600;
         text-decoration: none;
@@ -212,7 +212,7 @@
   <body>
     <div class="wrap">
       <header>
-        <h1>MySystem</h1>
+        <h1>Homestead</h1>
         <p class="tagline">
           Gerenciador de sistema em terminal — limpeza, instaladores e
           configuração Zsh
@@ -223,7 +223,7 @@
       <section>
         <h2>O que é</h2>
         <p>
-          MySystem reúne scripts de limpeza, instaladores de ferramentas e o
+          Homestead reúne scripts de limpeza, instaladores de ferramentas e o
           assistente de configuração Zsh numa única interface no terminal.
           Pensado para manter a máquina em ordem e configurar o shell em poucos
           passos.
@@ -261,25 +261,25 @@
           <p>
             Linux (amd64 ou arm64). Os binários são gerados automaticamente em
             cada
-            <a href="https://github.com/JaimeJunr/MYSYSTEM/releases">release</a
+            <a href="https://github.com/JaimeJunr/Homestead/releases">release</a
             >. Baixe, dê permissão e coloque no PATH.
           </p>
           <a
-            href="https://github.com/JaimeJunr/MYSYSTEM/releases/latest"
+            href="https://github.com/JaimeJunr/Homestead/releases/latest"
             class="btn-download"
             >Baixar na página de Releases</a
           >
-          <pre><code># Exemplo (arquivos: mysystem-linux-amd64, mysystem-linux-arm64)
-chmod +x mysystem-linux-amd64
-sudo mv mysystem-linux-amd64 /usr/local/bin/mysystem
-mysystem</code></pre>
+          <pre><code># Exemplo (arquivos: homestead-linux-amd64, homestead-linux-arm64)
+chmod +x homestead-linux-amd64
+sudo mv homestead-linux-amd64 /usr/local/bin/homestead
+homestead</code></pre>
         </div>
 
         <div class="install-option">
           <h3>Opção 2 — Compilar do código</h3>
           <p>Requisitos: Go 1.21+ e Linux.</p>
-          <pre><code>git clone https://github.com/JaimeJunr/MYSYSTEM
-cd MYSYSTEM
+          <pre><code>git clone https://github.com/JaimeJunr/Homestead
+cd Homestead
 make install</code></pre>
           <p>Ou execute direto: <code>make run</code></p>
         </div>
@@ -295,8 +295,8 @@ make install</code></pre>
 
       <footer>
         <p>
-          Código no <a href="https://github.com/JaimeJunr/MYSYSTEM">GitHub</a> ·
-          <a href="https://github.com/JaimeJunr/MYSYSTEM/tree/main/docs"
+          Código no <a href="https://github.com/JaimeJunr/Homestead">GitHub</a> ·
+          <a href="https://github.com/JaimeJunr/Homestead/tree/main/docs"
             >docs/</a
           >
           · MIT

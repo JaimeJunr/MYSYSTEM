@@ -1,6 +1,6 @@
 package interfaces
 
-import "github.com/jaime/mysystem/internal/domain/entities"
+import "github.com/JaimeJunr/Homestead/internal/domain/entities"
 
 // PluginInstallProgress represents the progress of a plugin installation
 type PluginInstallProgress struct {

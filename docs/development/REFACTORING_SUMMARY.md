@@ -1,4 +1,4 @@
-# 🔄 Resumo da Refatoração - MySystem
+# 🔄 Resumo da Refatoração - Homestead
 
 Refatoração completa do código para seguir a arquitetura em camadas definida.
 
@@ -69,7 +69,7 @@ Refatoração completa do código para seguir a arquitetura em camadas definida.
 
 ### 5. Main (Wiring)
 
-**Atualizado:** `cmd/mysystem/main.go`
+**Atualizado:** `cmd/homestead/main.go`
 
 ```go
 // Infrastructure
@@ -164,13 +164,13 @@ internal/
 ```bash
 # Todos passam ✅
 $ make test
-✅ github.com/jaime/mysystem
-✅ github.com/jaime/mysystem/internal/scripts  
-✅ github.com/jaime/mysystem/internal/tui
+✅ github.com/JaimeJunr/Homestead
+✅ github.com/JaimeJunr/Homestead/internal/scripts  
+✅ github.com/JaimeJunr/Homestead/internal/tui
 
 # Build funciona ✅
 $ make build
-✅ Build complete: ./mysystem
+✅ Build complete: ./homestead
 ```
 
 ## 🔄 Fluxo de Dados Agora

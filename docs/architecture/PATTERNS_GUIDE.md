@@ -1,6 +1,6 @@
-# 📚 Guia Prático de Padrões - MySystem
+# 📚 Guia Prático de Padrões - Homestead
 
-Exemplos práticos de como implementar cada padrão de projeto no MySystem.
+Exemplos práticos de como implementar cada padrão de projeto no Homestead.
 
 ## 📋 Índice
 
@@ -28,7 +28,7 @@ Exemplos práticos de como implementar cada padrão de projeto no MySystem.
 // internal/domain/interfaces/repository.go
 package interfaces
 
-import "github.com/jaime/mysystem/internal/domain/entities"
+import "github.com/JaimeJunr/Homestead/internal/domain/entities"
 
 type ScriptRepository interface {
     // Queries
@@ -54,8 +54,8 @@ import (
     "fmt"
     "sync"
 
-    "github.com/jaime/mysystem/internal/domain/entities"
-    "github.com/jaime/mysystem/internal/domain/interfaces"
+    "github.com/JaimeJunr/Homestead/internal/domain/entities"
+    "github.com/JaimeJunr/Homestead/internal/domain/interfaces"
 )
 
 type InMemoryScriptRepository struct {
@@ -138,7 +138,7 @@ func (r *InMemoryScriptRepository) Exists(id string) bool {
 package services
 
 import (
-    "github.com/jaime/mysystem/internal/domain/interfaces"
+    "github.com/JaimeJunr/Homestead/internal/domain/interfaces"
 )
 
 type ScriptService struct {
@@ -270,8 +270,8 @@ package factory
 import (
     "fmt"
 
-    "github.com/jaime/mysystem/internal/domain/interfaces"
-    "github.com/jaime/mysystem/internal/infrastructure/installer"
+    "github.com/JaimeJunr/Homestead/internal/domain/interfaces"
+    "github.com/JaimeJunr/Homestead/internal/infrastructure/installer"
 )
 
 type DefaultInstallerFactory struct {
@@ -457,7 +457,7 @@ func (s *InstallerService) Install(pkg *Package) error {
 
 #### 4. Configuration
 ```go
-// cmd/mysystem/main.go
+// cmd/homestead/main.go
 func setupInstallerService() *services.InstallerService {
     executor := executor.NewBashExecutor()
 
@@ -1171,7 +1171,7 @@ func (m *MultiPackageManager) Install(pkg string) error {
 
 ## 🎯 Resumo de Quando Usar
 
-| Padrão | Quando Usar | Exemplo no MySystem |
+| Padrão | Quando Usar | Exemplo no Homestead |
 |--------|-------------|---------------------|
 | **Repository** | Acesso a dados | Scripts, Packages, Configs |
 | **Factory** | Criar objetos variados | Criar installers por tipo |

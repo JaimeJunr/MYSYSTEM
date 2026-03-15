@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jaime/mysystem/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
 )
 
 // TestShellConfig_Validate tests the validation logic for ShellConfig

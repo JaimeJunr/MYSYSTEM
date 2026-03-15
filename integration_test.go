@@ -3,13 +3,13 @@ package main
 import (
 	"testing"
 
-	"github.com/jaime/mysystem/internal/app/services"
-	"github.com/jaime/mysystem/internal/domain/types"
-	"github.com/jaime/mysystem/internal/infrastructure/config"
-	"github.com/jaime/mysystem/internal/infrastructure/executor"
-	"github.com/jaime/mysystem/internal/infrastructure/installer"
-	"github.com/jaime/mysystem/internal/infrastructure/repository"
-	"github.com/jaime/mysystem/internal/tui"
+	"github.com/JaimeJunr/Homestead/internal/app/services"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/config"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/executor"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/installer"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/repository"
+	"github.com/JaimeJunr/Homestead/internal/tui"
 )
 
 // TestIntegration_ScriptsAndTUI tests integration between scripts and TUI

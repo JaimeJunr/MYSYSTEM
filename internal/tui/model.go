@@ -9,10 +9,10 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/jaime/mysystem/internal/app/services"
-	"github.com/jaime/mysystem/internal/domain/entities"
-	"github.com/jaime/mysystem/internal/domain/interfaces"
-	"github.com/jaime/mysystem/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/app/services"
+	"github.com/JaimeJunr/Homestead/internal/domain/entities"
+	"github.com/JaimeJunr/Homestead/internal/domain/interfaces"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
 )
 
 // ViewState represents different views in the TUI
@@ -170,7 +170,7 @@ func getMainMenuItems(zshCoreInstalled bool) []list.Item {
 	items = append(items,
 		menuItem{title: "🔄 Migração", desc: "Exportar/Importar configurações (em breve)", action: menuActionMigration},
 		menuItem{title: "⚙️  Configurações", desc: "Configurar a ferramenta (em breve)", action: menuActionSettings},
-		menuItem{title: "❌ Sair", desc: "Fechar MySystem", action: menuActionQuit},
+		menuItem{title: "❌ Sair", desc: "Fechar Homestead", action: menuActionQuit},
 	)
 	return items
 }
@@ -179,7 +179,7 @@ func getMainMenuItems(zshCoreInstalled bool) []list.Item {
 func NewModel(scriptService *services.ScriptService, installerService *services.InstallerService, configService *services.ConfigService) Model {
 	mainItems := getMainMenuItems(false) // will refresh when zsh core check completes
 	mainList := list.New(mainItems, list.NewDefaultDelegate(), 0, 0)
-	mainList.Title = "MySystem - Gerenciador de Sistema"
+	mainList.Title = "Homestead - Gerenciador de Sistema"
 	mainList.SetShowStatusBar(false)
 	mainList.SetFilteringEnabled(false)
 

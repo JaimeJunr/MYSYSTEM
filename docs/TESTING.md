@@ -1,6 +1,6 @@
-# 🧪 Testing Guide - MySystem
+# 🧪 Testing Guide - Homestead
 
-Documentação completa sobre os testes do projeto MySystem.
+Documentação completa sobre os testes do projeto Homestead.
 
 ## 📋 Índice
 
@@ -14,7 +14,7 @@ Documentação completa sobre os testes do projeto MySystem.
 
 ## 📊 Visão Geral
 
-O projeto MySystem possui uma suite completa de testes incluindo:
+O projeto Homestead possui uma suite completa de testes incluindo:
 - ✅ Testes unitários para packages individuais
 - ✅ Testes de integração entre componentes
 - ✅ Benchmarks de performance
@@ -31,7 +31,7 @@ O projeto MySystem possui uma suite completa de testes incluindo:
 ## 🗂️ Estrutura dos Testes
 
 ```
-MySystem/
+Homestead/
 ├── integration_test.go              # Testes de integração do sistema
 ├── internal/
 │   ├── scripts/
@@ -195,8 +195,8 @@ make test-coverage-html
 ### Output Esperado
 
 ```
-github.com/jaime/mysystem/internal/scripts    coverage: 85.2% of statements
-github.com/jaime/mysystem/internal/tui        coverage: 72.1% of statements
+github.com/JaimeJunr/Homestead/internal/scripts    coverage: 85.2% of statements
+github.com/JaimeJunr/Homestead/internal/tui        coverage: 72.1% of statements
 ```
 
 ### Meta de Cobertura
@@ -231,7 +231,7 @@ func TestMyFunction(t *testing.T) {
 ### Usando Test Helpers
 
 ```go
-import "github.com/jaime/mysystem/internal/testutil"
+import "github.com/JaimeJunr/Homestead/internal/testutil"
 
 func TestWithHelpers(t *testing.T) {
     // Usar helpers do testutil

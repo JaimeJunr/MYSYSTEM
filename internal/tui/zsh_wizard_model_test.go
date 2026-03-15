@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jaime/mysystem/internal/app/services"
+	"github.com/JaimeJunr/Homestead/internal/app/services"
 )
 
 // newTestZshWizardModel creates a ZshWizardModel for testing

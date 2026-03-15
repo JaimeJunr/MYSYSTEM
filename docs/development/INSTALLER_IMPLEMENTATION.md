@@ -1,4 +1,4 @@
-# 📦 Implementação do Sistema de Instaladores - MySystem
+# 📦 Implementação do Sistema de Instaladores - Homestead
 
 Implementação completa do sistema de instaladores de IDEs seguindo a arquitetura Clean Architecture.
 
@@ -90,7 +90,7 @@ Implementação completa do sistema de instaladores de IDEs seguindo a arquitetu
 
 ### 5. Main (Wiring)
 
-**Atualizado:** `cmd/mysystem/main.go`
+**Atualizado:** `cmd/homestead/main.go`
 
 ```go
 // Infrastructure - Packages
@@ -252,7 +252,7 @@ View de Instalação
 make build
 
 # Executar
-./mysystem
+./homestead
 ```
 
 ### 2. Navegar para Instaladores

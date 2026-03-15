@@ -3,7 +3,7 @@ package repository
 import (
 	"testing"
 
-	"github.com/jaime/mysystem/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
 )
 
 func TestPackageRepository_FindAll(t *testing.T) {

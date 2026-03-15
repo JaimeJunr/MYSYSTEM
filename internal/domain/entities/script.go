@@ -1,7 +1,7 @@
 package entities
 
 import (
-	"github.com/jaime/mysystem/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
 )
 
 // Script represents a system maintenance script

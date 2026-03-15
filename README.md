@@ -1,8 +1,8 @@
-# MySystem
+# Homestead
 
 > A CLI tool for managing, maintaining, and migrating Linux systems — built with Go and the [Charm ecosystem](https://github.com/charmbracelet).
 
-MySystem brings together system cleanup scripts, dev tool installers, and shell configuration into a single interactive terminal interface. Whether you're setting up a new machine or keeping an existing one tidy, it's designed to make the tedious stuff fast.
+Homestead brings together system cleanup scripts, dev tool installers, and shell configuration into a single interactive terminal interface. Whether you're setting up a new machine or keeping an existing one tidy, it's designed to make the tedious stuff fast.
 
 ---
 
@@ -26,8 +26,8 @@ MySystem brings together system cleanup scripts, dev tool installers, and shell 
 ### Install
 
 ```bash
-git clone https://github.com/yourusername/mysystem
-cd mysystem
+git clone https://github.com/JaimeJunr/Homestead
+cd Homestead
 make install   # builds and installs to $GOPATH/bin
 ```
 
@@ -67,8 +67,8 @@ Everything is modular — select only what you use, skip what you don't.
 ## Project Structure
 
 ```
-mysystem/
-├── cmd/mysystem/             # CLI entry point
+homestead/
+├── cmd/homestead/             # CLI entry point
 ├── internal/
 │   ├── domain/               # Core business logic (entities, interfaces, types)
 │   ├── app/services/         # Orchestration layer (ConfigService, PluginService, WizardService)

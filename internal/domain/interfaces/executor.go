@@ -1,6 +1,6 @@
 package interfaces
 
-import "github.com/jaime/mysystem/internal/domain/entities"
+import "github.com/JaimeJunr/Homestead/internal/domain/entities"
 
 // ScriptExecutor defines the interface for script execution
 type ScriptExecutor interface {

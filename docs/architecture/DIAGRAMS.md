@@ -1,6 +1,6 @@
-# 📐 Diagramas de Arquitetura - MySystem
+# 📐 Diagramas de Arquitetura - Homestead
 
-Diagramas visuais da arquitetura do MySystem.
+Diagramas visuais da arquitetura do Homestead.
 
 ## 🏗️ Diagrama de Camadas
 
@@ -336,10 +336,10 @@ Regras:
 ## 🔌 Diagrama de Módulos
 
 ```
-github.com/jaime/mysystem
+github.com/JaimeJunr/Homestead
 │
 ├── cmd/
-│   └── mysystem/
+│   └── homestead/
 │       └── main.go  ────┐
 │                        │ imports
 ├── internal/            │

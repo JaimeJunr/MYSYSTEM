@@ -3,9 +3,9 @@ package services
 import (
 	"testing"
 
-	"github.com/jaime/mysystem/internal/domain/types"
-	"github.com/jaime/mysystem/internal/infrastructure/installer"
-	"github.com/jaime/mysystem/internal/infrastructure/repository"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/installer"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/repository"
 )
 
 func TestInstallerService_GetAllPackages(t *testing.T) {

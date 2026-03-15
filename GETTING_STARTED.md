@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide walks you through building and running MySystem for the first time.
+This guide walks you through building and running Homestead for the first time.
 
 ## 1. Install Go
 
@@ -30,12 +30,12 @@ export PATH=$PATH:$HOME/go/bin
 ## 2. Clone and build
 
 ```bash
-git clone https://github.com/yourusername/mysystem
-cd mysystem
+git clone https://github.com/JaimeJunr/Homestead
+cd Homestead
 make install
 ```
 
-This compiles the binary and installs it to `$GOPATH/bin`. After that, `mysystem` is available from anywhere in your terminal.
+This compiles the binary and installs it to `$GOPATH/bin`. After that, `homestead` is available from anywhere in your terminal.
 
 If you just want to try it without installing:
 
@@ -72,7 +72,7 @@ Select a script, confirm, and it runs with live output in your terminal.
 make test              # run all tests
 make test-coverage     # tests + coverage report
 make test-verbose      # verbose output
-make build             # build binary (./mysystem)
+make build             # build binary (./homestead)
 make clean             # remove build artifacts
 ```
 

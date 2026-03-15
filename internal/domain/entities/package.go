@@ -1,7 +1,7 @@
 package entities
 
 import (
-	"github.com/jaime/mysystem/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
 )
 
 // Package represents a software package that can be installed

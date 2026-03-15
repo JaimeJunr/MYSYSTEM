@@ -1,9 +1,9 @@
 .PHONY: build run install clean test test-verbose test-coverage test-short test-integration help tidy
 
 # Build configuration
-BINARY_NAME=mysystem
+BINARY_NAME=homestead
 BUILD_DIR=.
-CMD_DIR=./cmd/mysystem
+CMD_DIR=./cmd/homestead
 COVERAGE_FILE=coverage.out
 
 # Build the application
@@ -79,7 +79,7 @@ tidy:
 
 # Show help
 help:
-	@echo "MySystem - Makefile commands:"
+	@echo "Homestead - Makefile commands:"
 	@echo ""
 	@echo "Build & Run:"
 	@echo "  make build              - Build the binary"

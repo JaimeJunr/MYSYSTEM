@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jaime/mysystem/internal/domain/entities"
-	"github.com/jaime/mysystem/internal/domain/interfaces"
+	"github.com/JaimeJunr/Homestead/internal/domain/entities"
+	"github.com/JaimeJunr/Homestead/internal/domain/interfaces"
 )
 
 // DefaultPackageInstaller is the default implementation of PackageInstaller

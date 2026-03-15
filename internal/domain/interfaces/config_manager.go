@@ -1,6 +1,6 @@
 package interfaces
 
-import "github.com/jaime/mysystem/internal/domain/entities"
+import "github.com/JaimeJunr/Homestead/internal/domain/entities"
 
 // ConfigSelections represents the user's selections during wizard
 type ConfigSelections struct {

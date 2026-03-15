@@ -12,8 +12,8 @@
 coverage.out
 
 # Output of the go build command
-/mysystem
-/cmd/mysystem/mysystem
+/homestead
+/cmd/homestead/homestead
 
 # Go workspace file
 go.work

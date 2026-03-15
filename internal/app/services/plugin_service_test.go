@@ -4,10 +4,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/jaime/mysystem/internal/domain/entities"
-	"github.com/jaime/mysystem/internal/domain/interfaces"
-	"github.com/jaime/mysystem/internal/domain/types"
-	"github.com/jaime/mysystem/internal/infrastructure/plugins"
+	"github.com/JaimeJunr/Homestead/internal/domain/entities"
+	"github.com/JaimeJunr/Homestead/internal/domain/interfaces"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/plugins"
 )
 
 // TestPluginService_InstallPlugin tests installing a plugin

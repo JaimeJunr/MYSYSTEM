@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jaime/mysystem/internal/domain/interfaces"
+	"github.com/JaimeJunr/Homestead/internal/domain/interfaces"
 )
 
 // WizardService provides wizard flow management

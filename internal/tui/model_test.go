@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/jaime/mysystem/internal/app/services"
-	"github.com/jaime/mysystem/internal/infrastructure/config"
-	"github.com/jaime/mysystem/internal/infrastructure/executor"
-	"github.com/jaime/mysystem/internal/infrastructure/installer"
-	"github.com/jaime/mysystem/internal/infrastructure/repository"
+	"github.com/JaimeJunr/Homestead/internal/app/services"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/config"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/executor"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/installer"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/repository"
 )
 
 // testModel creates a model for testing with mocked dependencies

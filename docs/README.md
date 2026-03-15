@@ -1,6 +1,6 @@
 # Documentation
 
-This folder contains architecture documentation, design decisions, and development history for MySystem.
+This folder contains architecture documentation, design decisions, and development history for Homestead.
 
 ## Structure
 
@@ -39,7 +39,7 @@ docs/
 
 ## Architecture overview
 
-MySystem follows Clean Architecture with 4 layers:
+Homestead follows Clean Architecture with 4 layers:
 
 ```
 ┌─────────────────────────────────────┐

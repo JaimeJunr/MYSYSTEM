@@ -1,6 +1,6 @@
-# 🏗️ Arquitetura de Software - MySystem
+# 🏗️ Arquitetura de Software - Homestead
 
-Documento de arquitetura e padrões de projeto para o MySystem.
+Documento de arquitetura e padrões de projeto para o Homestead.
 
 ## 📋 Índice
 
@@ -14,7 +14,7 @@ Documento de arquitetura e padrões de projeto para o MySystem.
 
 ## 🎯 Visão Geral
 
-MySystem segue uma **arquitetura em camadas** (Layered Architecture) com princípios de **Clean Architecture** e **Domain-Driven Design (DDD) simplificado**.
+Homestead segue uma **arquitetura em camadas** (Layered Architecture) com princípios de **Clean Architecture** e **Domain-Driven Design (DDD) simplificado**.
 
 ### Objetivos Arquiteturais
 
@@ -437,9 +437,9 @@ func (s *SnapAdapter) Install(name string) error {
 ## 📁 Estrutura de Diretórios Proposta
 
 ```
-MySystem/
+Homestead/
 ├── cmd/
-│   └── mysystem/
+│   └── homestead/
 │       └── main.go                 # Entry point
 │
 ├── internal/

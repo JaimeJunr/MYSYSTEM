@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**MySystem** is a CLI tool built with Go and the Charm Ecosystem for system maintenance, configuration, and migration. It helps users manage their Linux systems, run maintenance scripts, install tools, and migrate between systems with ease.
+**Homestead** is a CLI tool built with Go and the Charm Ecosystem for system maintenance, configuration, and migration. It helps users manage their Linux systems, run maintenance scripts, install tools, and migrate between systems with ease.
 
 ## Tech Stack
 
@@ -38,9 +38,9 @@ These scripts should be callable from the Go CLI tool.
 ## Architecture (Planned)
 
 ```
-mysystem/
+homestead/
 ├── cmd/
-│   └── mysystem/          # Main CLI entry point
+│   └── homestead/          # Main CLI entry point
 │       └── main.go
 ├── internal/
 │   ├── tui/               # Bubbletea UI components
@@ -78,7 +78,7 @@ mysystem/
 ### Setup
 ```bash
 # Initialize Go module (if not done)
-go mod init github.com/yourusername/mysystem
+go mod init github.com/JaimeJunr/Homestead
 
 # Install Charm dependencies
 go get github.com/charmbracelet/bubbletea
@@ -91,13 +91,13 @@ go get github.com/charmbracelet/log
 ### Build and Run
 ```bash
 # Build the CLI
-go build -o mysystem ./cmd/mysystem
+go build -o homestead ./cmd/homestead
 
 # Run directly
-go run ./cmd/mysystem
+go run ./cmd/homestead
 
 # Install to $GOPATH/bin
-go install ./cmd/mysystem
+go install ./cmd/homestead
 ```
 
 ### Testing

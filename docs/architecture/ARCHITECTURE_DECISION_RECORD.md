@@ -1,6 +1,6 @@
 # 📋 Architecture Decision Records (ADR)
 
-Registro de decisões arquiteturais importantes do MySystem.
+Registro de decisões arquiteturais importantes do Homestead.
 
 ## ADR-001: Arquitetura em Camadas com Clean Architecture
 
@@ -423,11 +423,11 @@ logger.Info("installing package",
 
 **Data**: 2026-03-14
 **Status**: Proposto (Futuro)
-**Contexto**: Como users customizam MySystem
+**Contexto**: Como users customizam Homestead
 
 ### Decisão
 
-Configuração em `~/.config/mysystem/config.yaml`:
+Configuração em `~/.config/homestead/config.yaml`:
 
 ```yaml
 installer:

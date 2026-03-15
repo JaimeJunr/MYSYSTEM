@@ -1,8 +1,8 @@
 package interfaces
 
 import (
-	"github.com/jaime/mysystem/internal/domain/entities"
-	"github.com/jaime/mysystem/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/domain/entities"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
 )
 
 // PackageRepository defines the interface for managing packages

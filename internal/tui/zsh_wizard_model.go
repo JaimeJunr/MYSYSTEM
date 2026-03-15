@@ -6,8 +6,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/jaime/mysystem/internal/app/services"
-	"github.com/jaime/mysystem/internal/domain/interfaces"
+	"github.com/JaimeJunr/Homestead/internal/app/services"
+	"github.com/JaimeJunr/Homestead/internal/domain/interfaces"
 )
 
 // KeySelectAll is the standard key for "marcar todos" in multi-select lists (DRY: reuse in other parts)

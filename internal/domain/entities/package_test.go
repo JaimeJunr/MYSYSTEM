@@ -3,7 +3,7 @@ package entities
 import (
 	"testing"
 
-	"github.com/jaime/mysystem/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
 )
 
 func TestPackageValidate(t *testing.T) {

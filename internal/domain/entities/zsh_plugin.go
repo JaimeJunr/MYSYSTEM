@@ -3,7 +3,7 @@ package entities
 import (
 	"fmt"
 
-	"github.com/jaime/mysystem/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
 )
 
 // ZshPlugin represents a Zsh/Oh My Zsh plugin

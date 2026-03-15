@@ -3,7 +3,7 @@ package entities
 import (
 	"time"
 
-	"github.com/jaime/mysystem/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
 )
 
 // ShellConfig represents a shell configuration (zshrc, bashrc, etc)
