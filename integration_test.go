@@ -40,7 +40,7 @@ func TestIntegration_ScriptsAndTUI(t *testing.T) {
 
 	// Create TUI model
 	repoService, _ := services.NewRepoService("")
-	model := tui.NewModel(scriptService, installerService, configService, repoService)
+	model := tui.NewModel(scriptService, installerService, configService, repoService, "")
 
 	// Verify model initializes correctly
 	if model.Init() == nil {
@@ -56,7 +56,7 @@ func TestIntegration_AllCategoriesHaveScripts(t *testing.T) {
 	scriptExec := executor.NewBashExecutor()
 	service := services.NewScriptService(scriptRepo, scriptExec)
 
-	categories := []string{"cleanup", "monitoring"}
+	categories := []string{"cleanup", "monitoring", "utilities"}
 
 	for _, category := range categories {
 		scripts, err := service.GetScriptsByCategory(types.Category(category))

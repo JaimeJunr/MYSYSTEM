@@ -11,7 +11,7 @@ docs/
 ├── architecture/
 │   ├── ARCHITECTURE.md                    # Layer overview and conventions
 │   ├── PATTERNS_GUIDE.md                  # Design patterns with code examples
-│   ├── ARCHITECTURE_DECISION_RECORD.md    # Why we made key decisions
+│   ├── adrs/                              # Architecture Decision Records (per-file)
 │   └── DIAGRAMS.md                        # Data flow and module diagrams
 └── development/
     ├── REFACTORING_SUMMARY.md             # History of architectural changes
@@ -33,7 +33,7 @@ docs/
 → [TESTING.md](TESTING.md) — how to write tests
 
 **Wondering why something was built a certain way?**
-→ [architecture/ARCHITECTURE_DECISION_RECORD.md](architecture/ARCHITECTURE_DECISION_RECORD.md)
+→ [architecture/adrs/README.md](architecture/adrs/README.md)
 
 ---
 

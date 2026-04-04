@@ -59,3 +59,8 @@ func (s *Script) IsMonitoring() bool {
 func (s *Script) IsInstall() bool {
 	return s.Category == types.CategoryInstall
 }
+
+// IsUtilities returns true if the script is a desktop utility installer (Flatpak, pacotes, etc.)
+func (s *Script) IsUtilities() bool {
+	return s.Category == types.CategoryUtilities
+}

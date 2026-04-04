@@ -62,6 +62,20 @@ func (s *InstallerService) GetPackagesByCategories(categories []types.PackageCat
 	return result, nil
 }
 
+// MergePackages saves each package by ID, replacing existing entries. Invalid packages are skipped.
+func (s *InstallerService) MergePackages(pkgs []entities.Package) error {
+	for _, pkg := range pkgs {
+		if err := pkg.Validate(); err != nil {
+			continue
+		}
+		p := pkg
+		if err := s.repo.Save(&p); err != nil {
+			return fmt.Errorf("merge package %s: %w", pkg.ID, err)
+		}
+	}
+	return nil
+}
+
 // GetPackageByID returns a package by ID
 func (s *InstallerService) GetPackageByID(id string) (*entities.Package, error) {
 	pkg, err := s.repo.FindByID(id)

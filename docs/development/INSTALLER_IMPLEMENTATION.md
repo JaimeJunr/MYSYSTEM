@@ -39,10 +39,7 @@ Implementação completa do sistema de instaladores de IDEs seguindo a arquitetu
 #### Repository
 - **repository/package_repository.go** - Implementação InMemory
   - Thread-safe com sync.RWMutex
-  - Inicializa com pacotes default:
-    - **Claude Code CLI** - CLI oficial da Anthropic
-    - **Cursor AI** - Editor de código com IA
-    - **Antigravity** - IDE moderna
+  - Carrega pacotes a partir do JSON embutido (`internal/infrastructure/catalog/installer-catalog.json` via `go:embed` no pacote `catalog`)
   - Implementa interface `PackageRepository`
 
 #### Installer

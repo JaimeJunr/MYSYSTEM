@@ -25,7 +25,7 @@ func testModel() Model {
 	configManager := config.NewFileConfigManager("")
 	configService := services.NewConfigService(configManager)
 
-	return NewModel(scriptService, installerService, configService, nil)
+	return NewModel(scriptService, installerService, configService, nil, "")
 }
 
 func TestNewModel(t *testing.T) {
@@ -380,7 +380,7 @@ func BenchmarkNewModel(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		NewModel(scriptService, installerService, configService, nil)
+		NewModel(scriptService, installerService, configService, nil, "")
 	}
 }
 
