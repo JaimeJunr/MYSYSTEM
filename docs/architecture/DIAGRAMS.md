@@ -495,4 +495,4 @@ github.com/JaimeJunr/Homestead
 Para mais detalhes, veja:
 - [ARCHITECTURE.md](../ARCHITECTURE.md)
 - [PATTERNS_GUIDE.md](PATTERNS_GUIDE.md)
-- [ARCHITECTURE_DECISION_RECORD.md](ARCHITECTURE_DECISION_RECORD.md)
+- [adrs/README.md](adrs/README.md)

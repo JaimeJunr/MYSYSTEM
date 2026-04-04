@@ -1,0 +1,658 @@
+{
+  "schema_version": 1,
+  "packages": [
+    {
+      "id": "claude-code",
+      "name": "Claude Code CLI",
+      "description": "Agente de código no terminal da Anthropic: navega no repositório, edita arquivos, roda testes e integra-se ao Git e às suas ferramentas de desenvolvimento.",
+      "version": "latest",
+      "category": "ide",
+      "download_url": "https://storage.googleapis.com/claude-code/install.sh",
+      "install_cmd": "bash install.sh",
+      "check_cmd": "which claude-code",
+      "project_url": "https://github.com/anthropics/claude-code"
+    },
+    {
+      "id": "cursor",
+      "name": "Cursor AI",
+      "description": "Editor baseado no VS Code com IA embutida para autocompletar, chat sobre o código e refatorações guiadas pelo contexto do projeto.",
+      "version": "latest",
+      "category": "ide",
+      "download_url": "https://download.cursor.sh/linux/appImage/x64",
+      "install_cmd": "chmod +x cursor.AppImage \u0026\u0026 sudo mv cursor.AppImage /usr/local/bin/cursor",
+      "check_cmd": "which cursor",
+      "project_url": "https://cursor.com"
+    },
+    {
+      "id": "antigravity",
+      "name": "Antigravity",
+      "description": "IDE contemporânea voltada a produtividade e fluxos de trabalho atuais, com foco em experiência integrada além do editor clássico.",
+      "version": "latest",
+      "category": "ide",
+      "download_url": "https://antigravity.dev/download/linux",
+      "install_cmd": "sudo dpkg -i antigravity.deb || sudo apt-get install -f -y",
+      "check_cmd": "which antigravity",
+      "project_url": "https://antigravity.dev"
+    },
+    {
+      "id": "vscode",
+      "name": "VS Code",
+      "description": "Editor da Microsoft com ecossistema enorme de extensões, depuração integrada, Git embutido e suporte a praticamente qualquer linguagem.",
+      "version": "latest",
+      "category": "ide",
+      "download_url": "https://code.visualstudio.com/sha/download?build=stable\u0026os=linux-deb-x64",
+      "install_cmd": "sudo dpkg -i {{download_path}} || sudo apt-get install -f -y",
+      "check_cmd": "which code",
+      "project_url": "https://github.com/microsoft/vscode"
+    },
+    {
+      "id": "zed",
+      "name": "Zed",
+      "description": "Editor em Rust com baixa latência, pensado para pair programming e edição colaborativa em tempo real no mesmo buffer.",
+      "version": "latest",
+      "category": "ide",
+      "download_url": "https://zed.dev/api/releases/latest/linux/deb",
+      "install_cmd": "sudo dpkg -i {{download_path}} || sudo apt-get install -f -y",
+      "check_cmd": "which zed",
+      "project_url": "https://github.com/zed-industries/zed"
+    },
+    {
+      "id": "neovim",
+      "name": "Neovim",
+      "description": "Fork do Vim com API em Lua, LSP, árvores de sintaxe e ecossistema de plugins atual, ideal para quem quer modal editing no terminal.",
+      "version": "latest",
+      "category": "ide",
+      "install_cmd": "sudo apt-get update \u0026\u0026 sudo apt-get install -y neovim",
+      "check_cmd": "which nvim",
+      "project_url": "https://github.com/neovim/neovim"
+    },
+    {
+      "id": "wezterm",
+      "name": "WezTerm",
+      "description": "Terminal em Rust com GPU, ligas, abas e multiplexação (como tmux) embutida; configuração declarativa em Lua para quem quer controle total.",
+      "version": "latest",
+      "category": "terminal",
+      "download_url": "https://wezfurlong.org/wezterm/",
+      "install_cmd": "xdg-open https://wezfurlong.org/wezterm/ || echo \"Abra o site do WezTerm no navegador para seguir as instruções de instalação.\"",
+      "check_cmd": "which wezterm",
+      "project_url": "https://github.com/wez/wezterm"
+    },
+    {
+      "id": "kitty",
+      "name": "Kitty",
+      "description": "Terminal acelerado por GPU com gráficos ricos, exibição de imagens no buffer, layouts e sessões próprias sem depender de tmux/screen.",
+      "version": "latest",
+      "category": "terminal",
+      "download_url": "https://sw.kovidgoyal.net/kitty/",
+      "install_cmd": "xdg-open https://sw.kovidgoyal.net/kitty/ || echo \"Abra o site do Kitty no navegador para seguir as instruções de instalação.\"",
+      "check_cmd": "which kitty",
+      "project_url": "https://github.com/kovidgoyal/kitty"
+    },
+    {
+      "id": "alacritty",
+      "name": "Alacritty",
+      "description": "Terminal minimalista em Rust focado em velocidade e simplicidade; configuração em YAML, ideal para quem quer pouca interface e máxima resposta.",
+      "version": "latest",
+      "category": "terminal",
+      "download_url": "https://alacritty.org",
+      "install_cmd": "xdg-open https://alacritty.org || echo \"Abra o site do Alacritty no navegador para seguir as instruções de instalação.\"",
+      "check_cmd": "which alacritty",
+      "project_url": "https://github.com/alacritty/alacritty"
+    },
+    {
+      "id": "warp",
+      "name": "Warp",
+      "description": "Terminal com blocos de comando, busca e IA para sugerir comandos; experiência visual própria (disponibilidade e termos variam por plataforma).",
+      "version": "latest",
+      "category": "terminal",
+      "download_url": "https://warp.dev",
+      "install_cmd": "xdg-open https://warp.dev || echo \"Abra o site do Warp no navegador para seguir as instruções de instalação.\"",
+      "check_cmd": "which warp",
+      "project_url": "https://www.warp.dev"
+    },
+    {
+      "id": "wave-terminal",
+      "name": "Wave Terminal",
+      "description": "Terminal open-source com workspaces, SSH e organização de sessões; alternativa comunitária a terminais comerciais focados em blocos e colaboração.",
+      "version": "latest",
+      "category": "terminal",
+      "download_url": "https://waveterm.dev",
+      "install_cmd": "xdg-open https://waveterm.dev || echo \"Abra o site do Wave Terminal no navegador para seguir as instruções de instalação.\"",
+      "check_cmd": "which wave",
+      "project_url": "https://github.com/waveterm/waveterm"
+    },
+    {
+      "id": "zash-terminal",
+      "name": "Zash Terminal",
+      "description": "Terminal moderno e intuitivo para Linux que integra gerenciamento de sessões SSH/SFTP, explorador de arquivos e assistência por IA em uma interface GTK4 de alta produtividade.",
+      "version": "latest",
+      "category": "terminal",
+      "install_cmd": "curl -fsSL https://raw.githubusercontent.com/leoberbert/zashterminal/refs/heads/main/install.sh -o /tmp/zashterminal-install.sh \u0026\u0026 chmod +x /tmp/zashterminal-install.sh \u0026\u0026 bash /tmp/zashterminal-install.sh \u0026\u0026 rm -f /tmp/zashterminal-install.sh",
+      "check_cmd": "command -v zashterminal \u003e/dev/null 2\u003e\u00261",
+      "notes": "O script oficial pode pedir sudo e fazer alterações no sistema.\n\nLeia o que o instalador imprimir antes de aceitar.\n\nRepositório: https://github.com/leoberbert/zashterminal",
+      "project_url": "https://github.com/leoberbert/zashterminal"
+    },
+    {
+      "id": "zsh",
+      "name": "Zsh",
+      "description": "Z Shell: shell interativo com globbing e completar avançados, histórico compartilhado e base ideal para Oh My Zsh e temas como Powerlevel10k.",
+      "version": "latest",
+      "category": "zsh_core",
+      "install_cmd": "sudo apt-get install -y zsh",
+      "check_cmd": "which zsh",
+      "project_url": "https://sourceforge.net/projects/zsh/"
+    },
+    {
+      "id": "oh-my-zsh",
+      "name": "Oh My Zsh",
+      "description": "Framework que organiza plugins, temas e atalhos do Zsh; ponto de partida padrão para personalizar o shell sem reinventar tudo do zero.",
+      "version": "latest",
+      "category": "zsh_core",
+      "download_url": "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh",
+      "install_cmd": "sh -c \"$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\" \"\" --unattended",
+      "check_cmd": "test -d ~/.oh-my-zsh",
+      "project_url": "https://github.com/ohmyzsh/ohmyzsh"
+    },
+    {
+      "id": "powerlevel10k",
+      "name": "Powerlevel10k",
+      "description": "Tema de prompt para Zsh extremamente rápido, com wizard interativo e indicadores de Git, tempo de comando e contexto visual rico.",
+      "version": "latest",
+      "category": "zsh_core",
+      "install_cmd": "git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/themes/powerlevel10k",
+      "check_cmd": "test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/themes/powerlevel10k",
+      "project_url": "https://github.com/romkatv/powerlevel10k"
+    },
+    {
+      "id": "fish-shell",
+      "name": "Fish Shell",
+      "description": "Shell focado em ergonomia: autosugestão e syntax highlighting nativos, ajuda integrada e configuração mais simples que Bash/Zsh para o dia a dia.",
+      "version": "latest",
+      "category": "shell",
+      "install_cmd": "sudo apt-get install -y fish",
+      "check_cmd": "which fish",
+      "project_url": "https://github.com/fish-shell/fish-shell"
+    },
+    {
+      "id": "fisher",
+      "name": "Fisher",
+      "description": "Gerenciador de pacotes para Fish: instala e atualiza plugins e temas a partir de repositórios Git com comandos simples.",
+      "version": "latest",
+      "category": "shell",
+      "install_cmd": "fish -c 'curl -sL https://raw.githubusercontent.com/jorgebucaran/fisher/main/functions/fisher.fish | source \u0026\u0026 fisher install jorgebucaran/fisher'",
+      "check_cmd": "fish -c 'type -q fisher'",
+      "project_url": "https://github.com/jorgebucaran/fisher"
+    },
+    {
+      "id": "zsh-plugin-git",
+      "name": "Git Plugin",
+      "description": "Plugin nativo do Oh My Zsh com aliases e funções úteis para status, branches, stash e fluxo Git no dia a dia.",
+      "version": "built-in",
+      "category": "tool",
+      "install_cmd": "# Built-in plugin",
+      "check_cmd": "test -f ~/.oh-my-zsh/plugins/git/git.plugin.zsh",
+      "project_url": "https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/git"
+    },
+    {
+      "id": "zsh-plugin-docker",
+      "name": "Docker Plugin",
+      "description": "Plugin nativo do Oh My Zsh que encurta comandos Docker e Compose com aliases e completar mais ágil.",
+      "version": "built-in",
+      "category": "tool",
+      "install_cmd": "# Built-in plugin",
+      "check_cmd": "test -f ~/.oh-my-zsh/plugins/docker/docker.plugin.zsh",
+      "project_url": "https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/docker"
+    },
+    {
+      "id": "zsh-plugin-rails",
+      "name": "Rails Plugin",
+      "description": "Plugin nativo do Oh My Zsh com atalhos para rails, rake, bundler e tarefas comuns de projetos Ruby on Rails.",
+      "version": "built-in",
+      "category": "tool",
+      "install_cmd": "# Built-in plugin",
+      "check_cmd": "test -f ~/.oh-my-zsh/plugins/rails/rails.plugin.zsh",
+      "project_url": "https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/rails"
+    },
+    {
+      "id": "zsh-plugin-z",
+      "name": "Z Plugin",
+      "description": "Aprende os diretórios que você mais usa e permite pular para eles com poucas letras (navegação por frequência).",
+      "version": "built-in",
+      "category": "tool",
+      "install_cmd": "# Built-in plugin",
+      "check_cmd": "test -f ~/.oh-my-zsh/plugins/z/z.plugin.zsh",
+      "project_url": "https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/z"
+    },
+    {
+      "id": "zsh-plugin-sudo",
+      "name": "Sudo Plugin",
+      "description": "Atalho para prefixar o comando atual com sudo (útil quando você já digitou tudo e esqueceu os privilégios).",
+      "version": "built-in",
+      "category": "tool",
+      "install_cmd": "# Built-in plugin",
+      "check_cmd": "test -f ~/.oh-my-zsh/plugins/sudo/sudo.plugin.zsh",
+      "project_url": "https://github.com/ohmyzsh/ohmyzsh/tree/master/plugins/sudo"
+    },
+    {
+      "id": "zsh-autosuggestions",
+      "name": "Zsh Autosuggestions",
+      "description": "Mostra em cinza comandos parecidos com o histórico; Tab ou seta direita aceita a sugestão, estilo fish.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions",
+      "check_cmd": "test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions",
+      "project_url": "https://github.com/zsh-users/zsh-autosuggestions"
+    },
+    {
+      "id": "zsh-syntax-highlighting",
+      "name": "Zsh Syntax Highlighting",
+      "description": "Colore comandos válidos/inválidos em tempo real antes de executar, reduzindo erros de digitação e typos.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting",
+      "check_cmd": "test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting",
+      "project_url": "https://github.com/zsh-users/zsh-syntax-highlighting"
+    },
+    {
+      "id": "fzf-zsh",
+      "name": "FZF Zsh Integration",
+      "description": "Instala o fzf (busca fuzzy) e integra ao Zsh para histórico, arquivos e completar interativos com preview.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "git clone https://github.com/junegunn/fzf.git ~/.fzf \u0026\u0026 ~/.fzf/install --all",
+      "check_cmd": "test -d ~/.fzf",
+      "project_url": "https://github.com/junegunn/fzf"
+    },
+    {
+      "id": "you-should-use",
+      "name": "You Should Use",
+      "description": "Avisa quando você roda um comando longo que já tem alias definido, ajudando a criar hábito de usar atalhos.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "git clone https://github.com/MichaelAquilina/zsh-you-should-use.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/you-should-use",
+      "check_cmd": "test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/you-should-use",
+      "project_url": "https://github.com/MichaelAquilina/zsh-you-should-use"
+    },
+    {
+      "id": "zsh-completions",
+      "name": "Zsh Completions",
+      "description": "Coleção extra de arquivos de completar para ferramentas CLI que ainda não vêm no Zsh padrão.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "git clone https://github.com/zsh-users/zsh-completions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-completions",
+      "check_cmd": "test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-completions",
+      "project_url": "https://github.com/zsh-users/zsh-completions"
+    },
+    {
+      "id": "zsh-history-substring-search",
+      "name": "Zsh History Substring Search",
+      "description": "Navegue no histórico com setas buscando qualquer trecho do comando, como no Bash com readline configurado.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "git clone https://github.com/zsh-users/zsh-history-substring-search ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search",
+      "check_cmd": "test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-history-substring-search",
+      "project_url": "https://github.com/zsh-users/zsh-history-substring-search"
+    },
+    {
+      "id": "fast-syntax-highlighting",
+      "name": "Fast Syntax Highlighting",
+      "description": "Alternativa de destaque de sintaxe para Zsh focada em desempenho, com mais estilos e integração com outros plugins.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "git clone https://github.com/zdharma-continuum/fast-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fast-syntax-highlighting",
+      "check_cmd": "test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/fast-syntax-highlighting",
+      "project_url": "https://github.com/zdharma-continuum/fast-syntax-highlighting"
+    },
+    {
+      "id": "zsh-autocomplete",
+      "name": "Zsh Autocomplete",
+      "description": "Menu de sugestões que atualiza enquanto você digita, aproximando o Zsh da experiência de IDEs e do fish.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "git clone --depth 1 -- https://github.com/marlonrichert/zsh-autocomplete.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autocomplete",
+      "check_cmd": "test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autocomplete",
+      "project_url": "https://github.com/marlonrichert/zsh-autocomplete"
+    },
+    {
+      "id": "auto-notify",
+      "name": "Auto Notify",
+      "description": "Envia notificação do desktop quando um comando demora além de um limiar, para você não ficar olhando o terminal.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "git clone https://github.com/MichaelAquilina/zsh-auto-notify.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/auto-notify",
+      "check_cmd": "test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/auto-notify",
+      "project_url": "https://github.com/MichaelAquilina/zsh-auto-notify"
+    },
+    {
+      "id": "zsh-vi-mode",
+      "name": "Zsh Vi Mode",
+      "description": "Modo Vi no Zsh com atalhos estilo Vim na linha de comando, indicadores de modo e extensões de edição.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "git clone https://github.com/jeffreytse/zsh-vi-mode ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-vi-mode",
+      "check_cmd": "test -d ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-vi-mode",
+      "project_url": "https://github.com/jeffreytse/zsh-vi-mode"
+    },
+    {
+      "id": "shell-gpt",
+      "name": "ShellGPT",
+      "description": "CLI que consulta modelos de linguagem para explicar comandos, gerar scripts e responder no contexto do shell (requer chave de API).",
+      "version": "latest",
+      "category": "ai",
+      "download_url": "https://github.com/TheR1D/shell_gpt",
+      "install_cmd": "xdg-open https://github.com/TheR1D/shell_gpt || echo \"Abra o repositório ShellGPT no navegador para seguir as instruções de instalação (requer API key).\"",
+      "check_cmd": "command -v sgpt",
+      "project_url": "https://github.com/TheR1D/shell_gpt"
+    },
+    {
+      "id": "fish-ai",
+      "name": "Fish-AI",
+      "description": "Plugin Fish que conecta o shell a provedores de IA para sugestões e ajuda contextual na linha de comando.",
+      "version": "latest",
+      "category": "ai",
+      "download_url": "https://github.com/Realiserad/fish-ai",
+      "install_cmd": "xdg-open https://github.com/Realiserad/fish-ai || echo \"Abra o repositório fish-ai no navegador para seguir as instruções de instalação.\"",
+      "check_cmd": "test -d ~/.config/fish",
+      "project_url": "https://github.com/Realiserad/fish-ai"
+    },
+    {
+      "id": "nvm",
+      "name": "NVM (Node Version Manager)",
+      "description": "Instala e troca versões do Node.js e npm por projeto ou globalmente, sem conflitar com pacotes do sistema.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash",
+      "check_cmd": "test -d ~/.nvm",
+      "project_url": "https://github.com/nvm-sh/nvm"
+    },
+    {
+      "id": "bun",
+      "name": "Bun",
+      "description": "Runtime JS/TS e toolkit com instalador de pacotes e bundler integrados, focado em velocidade e compatibilidade com ecossistema Node.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "curl -fsSL https://bun.sh/install | bash",
+      "check_cmd": "test -d ~/.bun",
+      "project_url": "https://github.com/oven-sh/bun"
+    },
+    {
+      "id": "sdkman",
+      "name": "SDKMAN!",
+      "description": "Gerencia JDKs, Gradle, Maven, Kotlin e dezenas de SDKs Java em paralelo, por usuário e sem bagunçar o apt.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "curl -s https://get.sdkman.io | bash",
+      "check_cmd": "test -d ~/.sdkman",
+      "project_url": "https://github.com/sdkman/sdkman-cli"
+    },
+    {
+      "id": "pnpm",
+      "name": "pnpm",
+      "description": "Gerenciador de pacotes Node com store de conteúdo endereçável, economizando disco e acelerando installs em monorepos.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "curl -fsSL https://get.pnpm.io/install.sh | sh -",
+      "check_cmd": "which pnpm",
+      "project_url": "https://github.com/pnpm/pnpm"
+    },
+    {
+      "id": "deno",
+      "name": "Deno",
+      "description": "Runtime TypeScript/JavaScript com permissões explícitas, imports por URL e ferramentas embutidas (formatter, linter, test runner).",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "curl -fsSL https://deno.land/install.sh | sh",
+      "check_cmd": "which deno",
+      "project_url": "https://github.com/denoland/deno"
+    },
+    {
+      "id": "angular-cli",
+      "name": "Angular CLI",
+      "description": "Ferramenta oficial para criar, construir, testar e fazer deploy de aplicações Angular (`ng`).",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "npm install -g @angular/cli",
+      "check_cmd": "which ng",
+      "project_url": "https://github.com/angular/angular-cli"
+    },
+    {
+      "id": "openvpn3",
+      "name": "OpenVPN 3",
+      "description": "Cliente VPN da família OpenVPN 3 com modelo de sessão e integração mais alinhada a ambientes desktop Linux atuais.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "sudo apt-get install -y openvpn3",
+      "check_cmd": "which openvpn3",
+      "project_url": "https://community.openvpn.net/openvpn/wiki/OpenVPN3Linux"
+    },
+    {
+      "id": "gh",
+      "name": "GitHub CLI",
+      "description": "Autenticação, issues, PRs, Actions e repositórios pelo terminal; usado também pelo fluxo Configurar Zsh para criar repos automaticamente.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \u0026\u0026 sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \u0026\u0026 echo \"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main\" | sudo tee /etc/apt/sources.list.d/github-cli.list \u003e /dev/null \u0026\u0026 sudo apt update \u0026\u0026 sudo apt install gh -y",
+      "check_cmd": "which gh",
+      "project_url": "https://github.com/cli/cli"
+    },
+    {
+      "id": "homebrew",
+      "name": "Homebrew",
+      "description": "Gerenciador de pacotes portável (Linux/macOS) com fórmulas e casks; útil para ferramentas de dev fora do apt.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "/bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"",
+      "check_cmd": "which brew",
+      "project_url": "https://github.com/Homebrew/install"
+    },
+    {
+      "id": "openjdk",
+      "name": "Java OpenJDK",
+      "description": "JDK OpenJDK via apt para compilar e rodar aplicações Java/JVM no sistema (versão empacotada pela sua distro).",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "sudo apt-get update \u0026\u0026 sudo apt-get install -y openjdk-21-jdk",
+      "check_cmd": "which javac",
+      "project_url": "https://openjdk.org/"
+    },
+    {
+      "id": "starship",
+      "name": "Starship",
+      "description": "Prompt multi-shell (Bash, Zsh, Fish…) em Rust: um único arquivo de config mostra Git, Node, Rust, duração de comando e mais.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "curl -sS https://starship.rs/install.sh | sh -s -- -y",
+      "check_cmd": "which starship",
+      "project_url": "https://github.com/starship/starship"
+    },
+    {
+      "id": "flathub",
+      "name": "Flathub (Flatpak Remote)",
+      "description": "Adiciona o remote Flathub ao Flatpak, de onde vêm milhares de apps empacotados (Insomnia, jogos, clientes, etc.).",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo",
+      "check_cmd": "flatpak remote-list | grep -q flathub",
+      "project_url": "https://github.com/flathub/flathub"
+    },
+    {
+      "id": "google-chrome",
+      "name": "Google Chrome",
+      "description": "Navegador da Google, canal estável: sync com conta Google, DevTools e suporte amplo a padrões web e extensões.",
+      "version": "latest",
+      "category": "app",
+      "download_url": "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb",
+      "install_cmd": "sudo dpkg -i {{download_path}} || sudo apt-get install -f -y",
+      "check_cmd": "which google-chrome || which google-chrome-stable",
+      "project_url": "https://www.google.com/chrome/"
+    },
+    {
+      "id": "insomnia",
+      "name": "Insomnia",
+      "description": "Cliente visual para REST, GraphQL e gRPC: organize ambientes, variáveis e coleções para depurar APIs sem curl manual.",
+      "version": "latest",
+      "category": "app",
+      "install_cmd": "flatpak install -y flathub rest.insomnia.Insomnia",
+      "check_cmd": "flatpak list | grep -q rest.insomnia.Insomnia",
+      "project_url": "https://github.com/Kong/insomnia"
+    },
+    {
+      "id": "remmina",
+      "name": "Remmina",
+      "description": "Cliente GTK para acesso remoto: RDP, VNC, SSH, SPICE e outros protocolos em uma única interface com perfis salvos.",
+      "version": "latest",
+      "category": "app",
+      "install_cmd": "sudo apt-get update \u0026\u0026 sudo apt-get install -y remmina",
+      "check_cmd": "which remmina",
+      "project_url": "https://gitlab.com/Remmina/Remmina"
+    },
+    {
+      "id": "distrobox",
+      "name": "Distrobox",
+      "description": "Roda outras distros em Podman/Docker com home, USB e apps gráficos integrados ao host — ideal para pacotes que só existem noutra distro.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sudo sh",
+      "check_cmd": "which distrobox",
+      "project_url": "https://github.com/89luca89/distrobox"
+    },
+    {
+      "id": "mise",
+      "name": "Mise",
+      "description": "Unifica gerenciadores como nvm, rbenv e pyenv numa só ferramenta: versões por diretório e plugins para dezenas de runtimes.",
+      "version": "latest",
+      "category": "tool",
+      "install_cmd": "curl https://mise.run | sh",
+      "check_cmd": "which mise",
+      "project_url": "https://github.com/jdx/mise"
+    },
+    {
+      "id": "dotnet-sdk",
+      "name": ".NET SDK",
+      "description": "SDK Microsoft .NET para build, test e publish de apps C#, F# e VB; script oficial instala em ~/.dotnet com variáveis no shell.",
+      "version": "8.0",
+      "category": "tool",
+      "install_cmd": "wget https://dot.net/v1/dotnet-install.sh -O /tmp/dotnet-install.sh \u0026\u0026 chmod +x /tmp/dotnet-install.sh \u0026\u0026 /tmp/dotnet-install.sh --version latest \u0026\u0026 echo 'export DOTNET_ROOT=$HOME/.dotnet' \u003e\u003e ~/.bashrc \u0026\u0026 echo 'export PATH=$PATH:$HOME/.dotnet:$HOME/.dotnet/tools' \u003e\u003e ~/.bashrc",
+      "check_cmd": "which dotnet",
+      "project_url": "https://github.com/dotnet/sdk"
+    },
+    {
+      "id": "cockpit",
+      "name": "Cockpit (servidor)",
+      "description": "Interface web para administrar o host Linux: serviços systemd, logs, armazenamento, rede, terminais e atualizações em um só lugar.",
+      "version": "latest",
+      "category": "sys_admin",
+      "install_cmd": "sudo apt-get update \u0026\u0026 sudo apt-get install -y cockpit \u0026\u0026 sudo systemctl enable --now cockpit.socket",
+      "check_cmd": "systemctl is-active cockpit.socket \u003e/dev/null 2\u003e\u00261 || command -v cockpit-bridge \u003e/dev/null 2\u003e\u00261",
+      "notes": "Fluxo pensado para Ubuntu/Debian (apt). Expõe interface web (porta 9090 por padrão).\n\nApós instalar: acesse https://IP-DESTA-MAQUINA:9090 no navegador.\n\nSe usar firewalld (Fedora/RHEL): sudo firewall-cmd --add-service=cockpit --permanent \u0026\u0026 sudo firewall-cmd --reload\n\nEm Debian estável mais antigo o pacote pode estar só em backports — ajuste sources.list se o apt não achar cockpit.\n\nDocumentação: https://cockpit-project.org/",
+      "project_url": "https://github.com/cockpit-project/cockpit"
+    },
+    {
+      "id": "cockpit-client",
+      "name": "Cockpit Client",
+      "description": "Aplicativo Flatpak que aponta para máquinas com Cockpit já instalado, para gerenciá-las sem abrir o navegador manualmente.",
+      "version": "latest",
+      "category": "sys_admin",
+      "install_cmd": "flatpak install -y flathub org.cockpit_project.CockpitClient",
+      "check_cmd": "flatpak list --app 2\u003e/dev/null | grep -q org.cockpit_project.CockpitClient",
+      "notes": "Requer Flatpak e o remote flathub (use o instalador Flathub em Ferramentas se precisar).\n\nÚtil quando o servidor já roda Cockpit e você só quer o cliente nesta máquina.\n\nDocumentação: https://cockpit-project.org/",
+      "project_url": "https://github.com/cockpit-project/cockpit"
+    },
+    {
+      "id": "webmin",
+      "name": "Webmin",
+      "description": "Painel web tradicional para usuários, serviços, firewall, arquivos e módulos Perl — comum em servidores e homelabs.",
+      "version": "latest",
+      "category": "sys_admin",
+      "install_cmd": "curl -fsSL -o /tmp/webmin-setup-repo.sh https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repo.sh \u0026\u0026 sudo sh /tmp/webmin-setup-repo.sh -f \u0026\u0026 rm -f /tmp/webmin-setup-repo.sh \u0026\u0026 sudo apt-get update \u0026\u0026 sudo apt-get install -y webmin",
+      "check_cmd": "dpkg -l webmin 2\u003e/dev/null | grep -q '^ii'",
+      "notes": "Adiciona repositório oficial via script da Webmin e instala o pacote (apt).\n\nServiço web com privilégios elevados: use senha forte, firewall e rede confiável.\n\nApós instalar, o script costuma indicar URL e porta (muitas vezes https://localhost:10000).\n\nDocumentação: https://webmin.com/",
+      "project_url": "https://github.com/webmin/webmin"
+    },
+    {
+      "id": "topgrade",
+      "name": "Topgrade",
+      "description": "Um comando dispara atualizações encadeadas: apt, flatpak, snap, firmware, rustup, pip, npm global e dezenas de outros backends configuráveis.",
+      "version": "latest",
+      "category": "sys_admin",
+      "install_cmd": "sudo apt-get update \u0026\u0026 sudo apt-get install -y pipx \u0026\u0026 pipx install topgrade",
+      "check_cmd": "test -x \"$HOME/.local/bin/topgrade\"",
+      "notes": "Instalação via pipx no seu usuário (sem misturar com apt do sistema).\n\nSe `topgrade` não aparecer no PATH, abra um novo terminal ou execute: export PATH=\"$HOME/.local/bin:$PATH\"\n\nNa primeira execução o Topgrade pode pedir confirmações — leia cada etapa.\n\nDocumentação: https://github.com/topgrade-rs/topgrade",
+      "project_url": "https://github.com/topgrade-rs/topgrade"
+    },
+    {
+      "id": "termius",
+      "name": "Termius",
+      "description": "Cliente SSH/SFTP com cofre de hosts, port forwarding e sync opcional entre dispositivos (conta na nuvem conforme configuração).",
+      "version": "latest",
+      "category": "sys_admin",
+      "install_cmd": "flatpak install -y flathub com.termius.Termius",
+      "check_cmd": "flatpak list --app 2\u003e/dev/null | grep -q com.termius.Termius",
+      "notes": "Requer Flatpak + flathub.\n\nConta Termius e dados na nuvem são opcionais; revise a política de privacidade se for usar sync.\n\nSite: https://termius.com/",
+      "project_url": "https://termius.com"
+    },
+    {
+      "id": "cpu-x",
+      "name": "CPU-X",
+      "description": "Equivalente gráfico ao CPU-Z: CPU, cache, RAM, GPU, placa-mãe, sensores e benchmark leve para diagnóstico de hardware.",
+      "version": "latest",
+      "category": "sys_admin",
+      "install_cmd": "flatpak install -y flathub io.github.thetumultuousunicornofdarkness.cpu-x",
+      "check_cmd": "flatpak list --app 2\u003e/dev/null | grep -q io.github.thetumultuousunicornofdarkness.cpu-x",
+      "notes": "Requer Flatpak + flathub.\n\nDocumentação: https://thetumultuousunicornofdarkness.github.io/CPU-X/",
+      "project_url": "https://github.com/TheTumultuousUnicornOfDarkness/CPU-X"
+    },
+    {
+      "id": "sssd-active-directory",
+      "name": "Ferramentas Active Directory (realm/sssd)",
+      "description": "Pacotes base (SSSD, realmd, Kerberos, PAM) para associar a máquina a um domínio Windows AD; exige join e DNS configurados depois.",
+      "version": "latest",
+      "category": "sys_admin",
+      "install_cmd": "sudo apt-get update \u0026\u0026 sudo apt-get install -y sssd realmd adcli samba-common-bin adsys krb5-user libpam-krb5 libpam-ccreds auth-client-config oddjob oddjob-mkhomedir",
+      "check_cmd": "command -v realm \u003e/dev/null 2\u003e\u00261 \u0026\u0026 dpkg -l sssd 2\u003e/dev/null | grep -q '^ii'",
+      "notes": "Este passo só INSTALA pacotes; não junta o computador ao domínio sozinho.\n\nDepois você precisa configurar DNS, horário (NTP) e executar algo como: sudo realm join DOMINIO.EXEMPLO -U administrador\n\nSe o apt reclamar do pacote adsys (comum em algumas versões do Debian), instale os demais pacotes manualmente sem o adsys.\n\nRevise com seu time de infraestrutura antes de alterar autenticação em produção.\n\nGuia Ubuntu: https://ubuntu.com/server/docs/samba-ad-integration",
+      "project_url": "https://github.com/SSSD/sssd"
+    },
+    {
+      "id": "sloth-bash",
+      "name": "Sloth-Bash",
+      "description": "Conjunto de utilitários e convenções em Bash do projeto Sloth-Bash, instalados pelo script oficial do repositório.",
+      "version": "latest",
+      "category": "sys_admin",
+      "install_cmd": "curl -fsSL https://raw.githubusercontent.com/psygreg/sloth-bash/main/install.sh | bash",
+      "check_cmd": "command -v sloth \u003e/dev/null 2\u003e\u00261 || test -d \"$HOME/.sloth-bash\"",
+      "notes": "Executa o install.sh oficial do repositório (curl | bash). Só confirme se você confia na origem.\n\nRepositório: https://github.com/psygreg/sloth-bash",
+      "project_url": "https://github.com/psygreg/sloth-bash"
+    },
+    {
+      "id": "prism-launcher",
+      "name": "Prism Launcher",
+      "description": "Launcher open-source para Minecraft: várias instâncias, mods, packs e contas com interface clara e sem launcher oficial obrigatório.",
+      "version": "latest",
+      "category": "games",
+      "install_cmd": "flatpak install -y flathub org.prismlauncher.PrismLauncher",
+      "check_cmd": "flatpak list | grep -q org.prismlauncher.PrismLauncher",
+      "project_url": "https://github.com/PrismLauncher/PrismLauncher"
+    },
+    {
+      "id": "lutris",
+      "name": "Lutris",
+      "description": "Hub para jogos no Linux: scripts de instalação, Wine/Proton, emuladores e integração com Epic, GOG, Humble e biblioteca local.",
+      "version": "latest",
+      "category": "games",
+      "install_cmd": "flatpak install -y flathub net.lutris.Lutris",
+      "check_cmd": "flatpak list | grep -q net.lutris.Lutris",
+      "project_url": "https://github.com/lutris/lutris"
+    },
+    {
+      "id": "gear-lever",
+      "name": "Gear Lever",
+      "description": "App GTK que instala AppImages com ícone no menu, atualizações e integração ao sistema, sem linha de comando.",
+      "version": "latest",
+      "category": "app",
+      "install_cmd": "flatpak install -y flathub it.mijorus.gearlever",
+      "check_cmd": "flatpak list | grep -q it.mijorus.gearlever",
+      "project_url": "https://github.com/mijorus/gearlever"
+    }
+  ]
+}

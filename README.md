@@ -174,7 +174,7 @@ make test           # all tests must pass
 make test-coverage  # check coverage
 ```
 
-Follow the existing patterns in `docs/architecture/PATTERNS_GUIDE.md`. If you're adding a new layer or changing how things are wired, consider adding an ADR to `docs/architecture/ARCHITECTURE_DECISION_RECORD.md`.
+Follow the existing patterns in `docs/architecture/PATTERNS_GUIDE.md`. If you're adding a new layer or changing how things are wired, consider adding an ADR under `docs/architecture/adrs/` (see `docs/architecture/adrs/README.md`).
 
 ---
 

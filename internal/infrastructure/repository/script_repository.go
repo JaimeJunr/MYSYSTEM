@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/JaimeJunr/Homestead/internal/domain/entities"
@@ -78,6 +79,10 @@ func (r *InMemoryScriptRepository) initializeDefaultScripts() {
 	for i := range defaultScripts {
 		r.scripts[defaultScripts[i].ID] = &defaultScripts[i]
 	}
+	for _, s := range defaultUtilityScripts() {
+		sc := s
+		r.scripts[sc.ID] = &sc
+	}
 }
 
 // FindAll returns all scripts
@@ -119,6 +124,10 @@ func (r *InMemoryScriptRepository) FindByCategory(category types.Category) ([]en
 			scripts = append(scripts, *script)
 		}
 	}
+
+	sort.Slice(scripts, func(i, j int) bool {
+		return scripts[i].Name < scripts[j].Name
+	})
 
 	return scripts, nil
 }

@@ -13,6 +13,7 @@ const (
 	PackageCategoryAI        PackageCategory = "ai"
 	PackageCategoryGames     PackageCategory = "games"
 	PackageCategorySysAdmin  PackageCategory = "sys_admin"
+	PackageCategoryOther     PackageCategory = "other"
 )
 
 // IsValid checks if the category is valid
@@ -26,7 +27,8 @@ func (c PackageCategory) IsValid() bool {
 		PackageCategoryShell,
 		PackageCategoryAI,
 		PackageCategoryGames,
-		PackageCategorySysAdmin:
+		PackageCategorySysAdmin,
+		PackageCategoryOther:
 		return true
 	default:
 		return false

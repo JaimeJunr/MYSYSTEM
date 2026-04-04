@@ -56,6 +56,7 @@ func (e *BashExecutor) newScriptCmd(script *entities.Script) (*exec.Cmd, error) 
 	cmd.Env = append(os.Environ(),
 		fmt.Sprintf("REAL_USER=%s", currentUser.Username),
 		fmt.Sprintf("REAL_HOME=%s", currentUser.HomeDir),
+		fmt.Sprintf("HOMESTEAD_ROOT=%s", e.rootDir),
 	)
 
 	return cmd, nil

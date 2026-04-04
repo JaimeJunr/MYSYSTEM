@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/JaimeJunr/Homestead/internal/domain/entities"
 	"github.com/JaimeJunr/Homestead/internal/domain/interfaces"
 	"github.com/JaimeJunr/Homestead/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/catalog"
 	"github.com/JaimeJunr/Homestead/internal/monitoring"
 )
 
@@ -92,6 +94,15 @@ type Model struct {
 	nativeBatteryErr   error
 	nativeMemory       *monitoring.MemorySnapshot
 	nativeMemoryErr    error
+
+	// scriptListParent: para onde Esc volta a partir de ViewScriptList (menu principal ou categorias de instaladores).
+	scriptListParent ViewState
+	// scriptListAsInstaller: lista de utilitários aberta a partir de Instaladores (UX alinhada a pacotes).
+	scriptListAsInstaller bool
+
+	// Installer package list: categories filter for the current ViewPackageList (refresh after remote catalog).
+	packageListCategories []types.PackageCategory
+	catalogURL            string
 }
 
 // menuAction identifies the main menu action
@@ -139,6 +150,7 @@ type installerCategoryItem struct {
 	title      string
 	desc       string
 	categories []types.PackageCategory
+	utilities  bool // true: abre lista de scripts CategoryUtilities (dentro de Instaladores)
 }
 
 func (i installerCategoryItem) Title() string       { return i.title }
@@ -183,6 +195,12 @@ type urlActionDoneMsg struct {
 }
 
 type clearKeyboardToastMsg struct{}
+
+// catalogFetchedMsg is sent after a background fetch of the remote installer catalog.
+type catalogFetchedMsg struct {
+	err error
+	ok  bool
+}
 
 var ansiEscapeRe = regexp.MustCompile(`\x1b\[[0-9;]*[a-zA-Z]`)
 
@@ -236,18 +254,49 @@ var (
 				Background(lipgloss.Color("236")).
 				Foreground(lipgloss.Color("252"))
 
-	scriptScreenFooterBarStyle = lipgloss.NewStyle().
+		scriptScreenFooterBarStyle = lipgloss.NewStyle().
 					Foreground(lipgloss.Color("241")).
 					Background(lipgloss.Color("235")).
 					Padding(0, 1)
 )
+
+func installerBreadcrumb(segment string) string {
+	return "📦 Instaladores > " + segment
+}
+
+func installerPackageSectionTitle(c types.PackageCategory) string {
+	switch c {
+	case types.PackageCategoryIDE:
+		return "💻 IDEs e Editores"
+	case types.PackageCategoryTool:
+		return "🔧 Ferramentas de Desenvolvimento"
+	case types.PackageCategoryApp:
+		return "📱 Aplicações"
+	case types.PackageCategoryZshCore:
+		return "🐚 Componentes Core (Zsh)"
+	case types.PackageCategoryTerminal:
+		return "🖥️ Emuladores de Terminal"
+	case types.PackageCategoryShell:
+		return "🐚 Shells Alternativos"
+	case types.PackageCategoryAI:
+		return "🤖 Integração com IA"
+	case types.PackageCategoryGames:
+		return "🎮 Games"
+	case types.PackageCategorySysAdmin:
+		return "🛡️ Administração de sistemas"
+	case types.PackageCategoryOther:
+		return "📎 Outros"
+	default:
+		return "📦"
+	}
+}
 
 // getMainMenuItems returns menu items; "Plugins e temas Zsh" only when zsh core is installed; "Configurar Zsh" always
 func getMainMenuItems(zshCoreInstalled bool) []list.Item {
 	items := []list.Item{
 		menuItem{title: "🧹 Limpeza do Sistema", desc: "Scripts de limpeza e manutenção", action: menuActionCleanup},
 		menuItem{title: "📊 Monitoramento", desc: "Informações do sistema", action: menuActionMonitoring},
-		menuItem{title: "📦 Instaladores", desc: "Instalar ferramentas e aplicações (IDEs, Zsh, Oh My Zsh, etc.)", action: menuActionInstallers},
+		menuItem{title: "📦 Instaladores", desc: "IDEs, apps, terminais, utilitários e componentes de sistema", action: menuActionInstallers},
 	}
 	if zshCoreInstalled {
 		items = append(items, menuItem{title: "🔧 Plugins e temas Zsh", desc: "Plugins, temas e .zshrc local", action: menuActionZshPlugins})
@@ -260,8 +309,9 @@ func getMainMenuItems(zshCoreInstalled bool) []list.Item {
 	return items
 }
 
-// NewModel creates the TUI model with dependencies injected
-func NewModel(scriptService *services.ScriptService, installerService *services.InstallerService, configService *services.ConfigService, repoService *services.RepoService) Model {
+// NewModel creates the TUI model with dependencies injected.
+// catalogURL may be empty to skip remote catalog fetch (e.g. tests).
+func NewModel(scriptService *services.ScriptService, installerService *services.InstallerService, configService *services.ConfigService, repoService *services.RepoService, catalogURL string) Model {
 	mainItems := getMainMenuItems(false) // will refresh when zsh core check completes
 	mainList := list.New(mainItems, list.NewDefaultDelegate(), 0, 0)
 	mainList.Title = "Homestead - Gerenciador de Sistema"
@@ -280,11 +330,14 @@ func NewModel(scriptService *services.ScriptService, installerService *services.
 		installerService: installerService,
 		configService:    configService,
 		repoService:      repoService,
+		catalogURL:       catalogURL,
 		state:            ViewMainMenu,
 		mainMenu:         mainList,
 		progress:         prog,
 		spinner:          spin,
-		confirmYes:       false, // Default to "No"
+		confirmYes:              false, // Default to "No"
+		scriptListParent:        ViewMainMenu,
+		scriptListAsInstaller:   false,
 	}
 }
 
@@ -296,9 +349,36 @@ func checkZshCoreInstalled(installerService *services.InstallerService) tea.Cmd 
 	}
 }
 
+func fetchCatalogCmd(url string, svc *services.InstallerService) tea.Cmd {
+	if strings.TrimSpace(url) == "" {
+		return nil
+	}
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		body, err := catalog.Fetch(ctx, url)
+		if err != nil {
+			return catalogFetchedMsg{err: err}
+		}
+		pkgs, _, err := catalog.ParseManifest(body)
+		if err != nil {
+			return catalogFetchedMsg{err: err}
+		}
+		if err := svc.MergePackages(pkgs); err != nil {
+			return catalogFetchedMsg{err: err}
+		}
+		_ = catalog.WriteCache(body)
+		return catalogFetchedMsg{ok: true}
+	}
+}
+
 // Init initializes the model
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(m.spinner.Tick, checkZshCoreInstalled(m.installerService))
+	cmds := []tea.Cmd{m.spinner.Tick, checkZshCoreInstalled(m.installerService)}
+	if c := fetchCatalogCmd(m.catalogURL, m.installerService); c != nil {
+		cmds = append(cmds, c)
+	}
+	return tea.Batch(cmds...)
 }
 
 // Update handles messages and updates state
@@ -421,7 +501,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "esc":
 				switch m.state {
 				case ViewScriptList:
-					m.state = ViewMainMenu
+					m.state = m.scriptListParent
 					m.confirmYes = false
 					return m, nil
 				case ViewConfirmation:
@@ -531,6 +611,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m, m.nativeMonitorLoadCmd()
+
+	case catalogFetchedMsg:
+		if msg.err != nil {
+			return m, nil
+		}
+		var nextCmd tea.Cmd
+		if msg.ok {
+			if m.state == ViewPackageList && len(m.packageListCategories) > 0 {
+				sel := m.packageList.Index()
+				m.loadPackagesFromCategories(m.packageListCategories)
+				items := m.packageList.Items()
+				if len(items) > 0 {
+					if sel < 0 {
+						sel = 0
+					}
+					if sel >= len(items) {
+						sel = len(items) - 1
+					}
+					m.packageList.Select(sel)
+				}
+			}
+			m.keyboardToast = "Catálogo de instaladores atualizado."
+			nextCmd = tea.Tick(2*time.Second, func(time.Time) tea.Msg { return clearKeyboardToastMsg{} })
+		}
+		return m, nextCmd
 
 	case urlActionDoneMsg:
 		if msg.err != nil {
@@ -669,10 +774,19 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 		}
 
 	case ViewInstallerCategories:
-		// Ao escolher uma categoria, carregamos a lista de pacotes
 		selected := m.installerList.SelectedItem()
-		if catItem, ok := selected.(installerCategoryItem); ok && len(catItem.categories) > 0 {
+		catItem, ok := selected.(installerCategoryItem)
+		if !ok {
+			break
+		}
+		if catItem.utilities {
+			m.state = ViewScriptList
+			m.loadScriptsWithParent(types.CategoryUtilities, ViewInstallerCategories)
+			return m, nil
+		}
+		if len(catItem.categories) > 0 {
 			m.state = ViewPackageList
+			m.packageListCategories = append([]types.PackageCategory(nil), catItem.categories...)
 			m.loadPackagesFromCategories(catItem.categories)
 		}
 
@@ -730,8 +844,15 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// loadScripts loads scripts for the selected category
+// loadScripts loads scripts for the selected category (Esc volta ao menu principal).
 func (m *Model) loadScripts(category types.Category) {
+	m.loadScriptsWithParent(category, ViewMainMenu)
+}
+
+// loadScriptsWithParent define para onde Esc regressa a partir desta lista (ex.: instaladores).
+func (m *Model) loadScriptsWithParent(category types.Category, parent ViewState) {
+	m.scriptListParent = parent
+	m.scriptListAsInstaller = parent == ViewInstallerCategories && category == types.CategoryUtilities
 	scripts, err := m.scriptService.GetScriptsByCategory(category)
 	if err != nil {
 		scripts = []entities.Script{}
@@ -749,9 +870,14 @@ func (m *Model) loadScripts(category types.Category) {
 		types.CategoryCleanup:    "🧹 Limpeza do Sistema",
 		types.CategoryMonitoring: "📊 Monitoramento",
 		types.CategoryInstall:    "📦 Instaladores",
+		types.CategoryUtilities:  "🧰 Utilitários",
 	}
 
-	m.scriptList.Title = categoryNames[category]
+	title := categoryNames[category]
+	if m.scriptListAsInstaller {
+		title = installerBreadcrumb("🧰 Utilitários")
+	}
+	m.scriptList.Title = title
 	m.scriptList.SetShowStatusBar(false)
 }
 
@@ -762,7 +888,8 @@ func (m *Model) loadPackages(category types.PackageCategory) {
 		packages = []entities.Package{}
 	}
 
-	m.setPackageList(packages, category, nil)
+	t := installerBreadcrumb(installerPackageSectionTitle(category))
+	m.setPackageList(packages, category, &t)
 }
 
 // loadPackagesFromCategories loads packages from multiple categories (e.g. IDE + Zsh core for Instaladores)
@@ -772,21 +899,11 @@ func (m *Model) loadPackagesFromCategories(categories []types.PackageCategory) {
 		packages = []entities.Package{}
 	}
 
-	categoryNames := map[types.PackageCategory]string{
-		types.PackageCategoryIDE:       "💻 IDEs e Editores",
-		types.PackageCategoryTool:      "🔧 Ferramentas de Desenvolvimento",
-		types.PackageCategoryApp:       "📱 Aplicações",
-		types.PackageCategoryZshCore:   "🐚 Componentes Core (Zsh)",
-		types.PackageCategoryTerminal:  "🖥️ Emuladores de Terminal",
-		types.PackageCategoryShell:     "🐚 Shells Alternativos",
-		types.PackageCategoryAI:        "🤖 Integração com IA",
-		types.PackageCategoryGames:     "🎮 Games",
-		types.PackageCategorySysAdmin:  "🛡️ Administração de sistemas",
+	seg := installerPackageSectionTitle(categories[0])
+	if len(categories) != 1 {
+		seg = "Múltiplas categorias"
 	}
-	title := "📦 Instaladores (IDEs, Shells, Terminais, IA)"
-	if len(categories) == 1 {
-		title = categoryNames[categories[0]]
-	}
+	title := installerBreadcrumb(seg)
 	m.setPackageList(packages, categories[0], &title)
 }
 
@@ -799,21 +916,10 @@ func (m *Model) setPackageList(packages []entities.Package, category types.Packa
 	delegate := list.NewDefaultDelegate()
 	m.packageList = list.New(items, delegate, m.width, m.height-4)
 
-	categoryNames := map[types.PackageCategory]string{
-		types.PackageCategoryIDE:       "💻 IDEs e Editores",
-		types.PackageCategoryTool:      "🔧 Ferramentas de Desenvolvimento",
-		types.PackageCategoryApp:       "📱 Aplicações",
-		types.PackageCategoryZshCore:   "🐚 Componentes Core (Zsh)",
-		types.PackageCategoryTerminal:  "🖥️ Emuladores de Terminal",
-		types.PackageCategoryShell:     "🐚 Shells Alternativos",
-		types.PackageCategoryAI:        "🤖 Integração com IA",
-		types.PackageCategoryGames:     "🎮 Games",
-		types.PackageCategorySysAdmin:  "🛡️ Administração de sistemas",
-	}
 	if titleOverride != nil {
 		m.packageList.Title = *titleOverride
 	} else {
-		m.packageList.Title = categoryNames[category]
+		m.packageList.Title = installerBreadcrumb(installerPackageSectionTitle(category))
 	}
 	m.packageList.SetShowStatusBar(false)
 }
@@ -834,6 +940,11 @@ func (m *Model) loadInstallerCategories() {
 			categories: []types.PackageCategory{
 				types.PackageCategoryApp,
 			},
+		},
+		installerCategoryItem{
+			title: "🧰 Utilitários",
+			desc:  "VPN, Flatpak, periféricos e pacotes nativos",
+			utilities: true,
 		},
 		installerCategoryItem{
 			title: "🔧 Ferramentas de desenvolvimento",
@@ -884,6 +995,13 @@ func (m *Model) loadInstallerCategories() {
 				types.PackageCategorySysAdmin,
 			},
 		},
+		installerCategoryItem{
+			title: "📎 Outros",
+			desc:  "Entradas do catálogo remoto ou categorias não mapeadas",
+			categories: []types.PackageCategory{
+				types.PackageCategoryOther,
+			},
+		},
 	}
 
 	delegate := list.NewDefaultDelegate()
@@ -903,7 +1021,11 @@ func (m Model) View() string {
 		return m.mainMenu.View()
 
 	case ViewScriptList:
-		help := helpStyle.Render("\n↑/↓: navegar • enter: executar • esc: voltar • q: sair")
+		helpLine := "\n↑/↓: navegar • enter: executar • esc: voltar • q: sair"
+		if m.scriptListAsInstaller {
+			helpLine = "\n↑/↓: navegar • enter: instalar • esc: voltar • q: sair"
+		}
+		help := helpStyle.Render(helpLine)
 		var feedback string
 		if m.err != nil {
 			feedback = lipgloss.NewStyle().
@@ -913,7 +1035,7 @@ func (m Model) View() string {
 		return m.scriptList.View() + feedback + help
 
 	case ViewInstallerCategories:
-		help := helpStyle.Render("\n↑/↓: navegar • enter: abrir categoria • esc: voltar • q: sair")
+		help := helpStyle.Render("\n↑/↓: navegar • enter: abrir • esc: voltar • q: sair")
 		return m.installerList.View() + help
 
 	case ViewPackageList:
@@ -969,8 +1091,16 @@ func (m Model) renderConfirmation() string {
 		if item.NativeMonitor != "" {
 			title = "Abrir monitor?"
 			description = fmt.Sprintf("Você deseja abrir:\n\n  %s\n  %s", item.Name, item.Description)
+		} else if m.scriptListAsInstaller && item.Category == types.CategoryUtilities {
+			title = "Instalar utilitário?"
+			description = fmt.Sprintf("%s\n\n%s", item.Name, item.Description)
+			if item.RequiresSudo {
+				description += "\n\n⚠️  Pode ser pedida senha de administrador (sudo)."
+			} else {
+				description += "\n\nSem sudo: altera só arquivos do seu usuário."
+			}
 		} else {
-			title = "Executar Script?"
+			title = "Executar script?"
 			description = fmt.Sprintf("Você deseja executar:\n\n  %s\n  %s", item.Name, item.Description)
 			if item.RequiresSudo {
 				description += "\n\n⚠️  Este script requer permissões de administrador (sudo)"
@@ -1154,23 +1284,37 @@ func (m Model) renderScriptOutput() string {
 	boxW := scriptOutputCardWidth(m.width)
 
 	if m.scriptOutputPhase == "running" {
+		accent := "📜 Executando script"
+		wait := "Capturando saída…"
+		note := "A saída aparecerá no painel abaixo quando o script terminar."
+		sudoNote := "Scripts com sudo usam o terminal completo para pedir senha."
+		if m.scriptListAsInstaller {
+			accent = "⚙️ Instalando"
+			wait = "A aguardar conclusão…"
+			note = "O registo aparece abaixo quando terminar."
+			sudoNote = "Com sudo, a senha pode ser pedida em outra tela."
+		}
 		head := titleStyle.Render("Homestead") + "\n" +
 			helpStyle.Render("Gerenciador de Sistema") + "\n" +
 			scriptOutputDivider(boxW) + "\n" +
-			scriptScreenAccentStyle.Render("📜 Executando script") + "\n" +
+			scriptScreenAccentStyle.Render(accent) + "\n" +
 			lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("230")).Render(m.scriptOutputTitle)
-		body := "\n\n" + fmt.Sprintf("%s %s", m.spinner.View(), helpStyle.Render("Capturando saída…"))
-		body += "\n\n" + helpStyle.Render("A saída aparecerá no painel abaixo quando o script terminar.")
-		body += "\n" + helpStyle.Render("Scripts com sudo usam o terminal completo para pedir senha.")
+		body := "\n\n" + fmt.Sprintf("%s %s", m.spinner.View(), helpStyle.Render(wait))
+		body += "\n\n" + helpStyle.Render(note)
+		body += "\n" + helpStyle.Render(sudoNote)
 		content := head + body
 		box := scriptScreenOuterStyle.Width(boxW)
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box.Render(content))
 	}
 
+	doneAccent := "📜 Saída do script"
+	if m.scriptListAsInstaller {
+		doneAccent = "📜 Registo da instalação"
+	}
 	head := titleStyle.Render("Homestead") + "\n" +
 		helpStyle.Render("Gerenciador de Sistema") + "\n" +
 		scriptOutputDivider(boxW) + "\n" +
-		scriptScreenAccentStyle.Render("📜 Saída do script")
+		scriptScreenAccentStyle.Render(doneAccent)
 	nameLine := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("230")).Render(m.scriptOutputTitle)
 	if m.scriptOutputErr != nil {
 		nameLine += "  " + lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true).Render("· falhou")

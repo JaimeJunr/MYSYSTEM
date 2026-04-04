@@ -3,6 +3,7 @@ package services
 import (
 	"testing"
 
+	"github.com/JaimeJunr/Homestead/internal/domain/entities"
 	"github.com/JaimeJunr/Homestead/internal/domain/types"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/installer"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/repository"
@@ -75,5 +76,31 @@ func TestInstallerService_IsPackageInstalled(t *testing.T) {
 	_, err := service.IsPackageInstalled("claude-code")
 	if err != nil {
 		t.Fatalf("IsPackageInstalled() error = %v", err)
+	}
+}
+
+func TestInstallerService_MergePackages(t *testing.T) {
+	repo := repository.NewInMemoryPackageRepository()
+	inst := installer.NewDefaultPackageInstaller()
+	service := NewInstallerService(repo, inst)
+
+	newPkg := entities.Package{
+		ID:          "remote-only",
+		Name:        "Remote Only",
+		Description: "d",
+		Version:     "1",
+		Category:    types.PackageCategoryTool,
+		InstallCmd:  "true",
+		CheckCmd:    "true",
+	}
+	if err := service.MergePackages([]entities.Package{newPkg}); err != nil {
+		t.Fatal(err)
+	}
+	p, err := service.GetPackageByID("remote-only")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p.Name != "Remote Only" {
+		t.Fatalf("name = %s", p.Name)
 	}
 }
