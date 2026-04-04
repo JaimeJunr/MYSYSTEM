@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -14,7 +15,17 @@ import (
 	"github.com/JaimeJunr/Homestead/internal/tui"
 )
 
+// version is set by release builds (-ldflags "-X main.version=...").
+var version = "dev"
+
 func main() {
+	showVersion := flag.Bool("version", false, "print version and exit")
+	flag.Parse()
+	if *showVersion {
+		fmt.Println(version)
+		return
+	}
+
 	// Dependency Injection (Manual Wiring)
 
 	// Infrastructure layer - Scripts
