@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -121,6 +122,16 @@ func (m ZshRepoModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// Success/Error: Esc or Enter — volta ao menu ou ao painel "já configurado"
 		if m.currentView == ZshRepoViewSuccess || m.currentView == ZshRepoViewError {
+			if keyStr == "o" || keyStr == "O" {
+				if m.currentView == ZshRepoViewSuccess {
+					web := m.browserOriginURL()
+					if web != "" {
+						return m, zshRepoOpenURLCmd(web)
+					}
+					return m, zshRepoOpenURLCmd("") // dispara toast de erro via OpenURL
+				}
+				return m, nil
+			}
 			if msg.String() == "esc" || isEnter {
 				if m.returnToDashboard {
 					m.returnToDashboard = false
@@ -499,7 +510,9 @@ func (m ZshRepoModel) View() string {
 			backHint = "voltar ao painel"
 		}
 		body := lipgloss.NewStyle().Padding(1, 2).Render(
-			"✅ Operação concluída com sucesso.\n\nPressione Enter ou Esc para " + backHint + ".",
+			"✅ Operação concluída com sucesso.\n\n"+
+				"[o] Abrir o repositório no navegador\n\n"+
+				"Pressione Enter ou Esc para "+backHint+".",
 		)
 		box := wizardPreviewStyle.Render(body)
 		return lipgloss.JoinVertical(lipgloss.Left, title, box, help)
@@ -520,6 +533,54 @@ func (m ZshRepoModel) View() string {
 	default:
 		return fmt.Sprintf("%s\n\n%s", title, help)
 	}
+}
+
+func (m ZshRepoModel) browserOriginURL() string {
+	if m.repoService == nil {
+		return ""
+	}
+	return gitRemoteToWebURL(m.repoService.GetRemoteURL("origin"))
+}
+
+func zshRepoOpenURLCmd(webURL string) tea.Cmd {
+	return func() tea.Msg {
+		err := OpenURL(webURL)
+		return urlActionDoneMsg{verb: "open", err: err}
+	}
+}
+
+// gitRemoteToWebURL converts a git remote URL to HTTPS for opening in a browser.
+func gitRemoteToWebURL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	if strings.HasPrefix(raw, "http://") || strings.HasPrefix(raw, "https://") {
+		return strings.TrimSuffix(raw, ".git")
+	}
+	if strings.HasPrefix(raw, "git@") {
+		rest := strings.TrimPrefix(raw, "git@")
+		colon := strings.Index(rest, ":")
+		if colon <= 0 {
+			return ""
+		}
+		host := rest[:colon]
+		path := strings.TrimSuffix(rest[colon+1:], ".git")
+		return "https://" + host + "/" + path
+	}
+	if strings.HasPrefix(raw, "ssh://") {
+		u := strings.TrimPrefix(raw, "ssh://")
+		u = strings.TrimSuffix(u, ".git")
+		if strings.HasPrefix(u, "git@") {
+			u = strings.TrimPrefix(u, "git@")
+		}
+		slash := strings.Index(u, "/")
+		if slash <= 0 {
+			return ""
+		}
+		return "https://" + u[:slash] + "/" + u[slash+1:]
+	}
+	return ""
 }
 
 // IsDone returns true when the wizard completed (user left success/error or cancelled)

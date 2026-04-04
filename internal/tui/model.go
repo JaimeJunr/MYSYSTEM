@@ -404,8 +404,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
-		// When in Zsh wizard, let the wizard handle all keys (don't consume enter/esc here)
-		if m.state != ViewZshWizard {
+		// When in Zsh wizard or Zsh repo wizard, let the wizard handle keys (don't consume enter/o/c here)
+		if m.state != ViewZshWizard && m.state != ViewZshRepoWizard {
 			switch msg.String() {
 			case "ctrl+c", "q":
 				if m.state == ViewMainMenu {
@@ -941,7 +941,11 @@ func (m Model) View() string {
 
 	case ViewZshRepoWizard:
 		if m.zshRepoWizard != nil {
-			return m.zshRepoWizard.View()
+			body := m.zshRepoWizard.View()
+			if strings.TrimSpace(m.keyboardToast) != "" {
+				body += "\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(m.keyboardToast) + "\n"
+			}
+			return body
 		}
 		return "Iniciando Configurar Zsh..."
 
