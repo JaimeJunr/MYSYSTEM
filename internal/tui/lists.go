@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/JaimeJunr/Homestead/internal/domain/entities"
 	"github.com/JaimeJunr/Homestead/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/profilestate"
 	"github.com/JaimeJunr/Homestead/internal/tui/items"
 	"github.com/JaimeJunr/Homestead/internal/tui/theme"
 )
@@ -14,7 +15,7 @@ func (m *Model) loadScripts(category types.Category) {
 
 func (m *Model) loadScriptsWithParent(category types.Category, parent ViewState) {
 	m.scriptListParent = parent
-	m.scriptListAsInstaller = parent == ViewInstallerCategories && category == types.CategoryUtilities
+	m.scriptListCategory = category
 	scripts, err := m.scriptService.GetScriptsByCategory(category)
 	if err != nil {
 		scripts = []entities.Script{}
@@ -22,25 +23,27 @@ func (m *Model) loadScriptsWithParent(category types.Category, parent ViewState)
 
 	rowItems := make([]list.Item, len(scripts))
 	for i, script := range scripts {
-		rowItems[i] = items.ScriptItem{Script: script}
+		fav := m.profile != nil && profilestate.IsFavorite(m.profile, script.ID)
+		rowItems[i] = items.ScriptItem{Script: script, Favorite: fav}
 	}
 
 	delegate := list.NewDefaultDelegate()
-	m.scriptList = list.New(rowItems, delegate, m.width, m.height-4)
+	m.scriptList = list.New(rowItems, delegate, m.width, m.height-theme.ListVerticalReserve())
 
 	categoryNames := map[types.Category]string{
 		types.CategoryCleanup:    "🧹 Limpeza do Sistema",
-		types.CategoryMonitoring: "📊 Monitoramento",
+		types.CategoryMonitoring: "📊 Monitoramento (Go · ~3s)",
+		types.CategoryCheckup:    "🩺 Manutenção / Check-up (leitura)",
 		types.CategoryInstall:    "📦 Instaladores",
 		types.CategoryUtilities:  "🧰 Utilitários",
 	}
 
-	title := categoryNames[category]
-	if m.scriptListAsInstaller {
-		title = theme.InstallerBreadcrumb("🧰 Utilitários")
-	}
-	m.scriptList.Title = title
-	m.scriptList.SetShowStatusBar(false)
+	m.scriptList.Title = categoryNames[category]
+	m.scriptList.FilterInput.Prompt = "Filtrar: "
+	m.scriptList.SetShowHelp(false)
+	m.scriptList.SetShowStatusBar(true)
+	m.scriptList.SetStatusBarItemName("script", "scripts")
+	m.scriptList.SetFilteringEnabled(true)
 }
 
 func (m *Model) loadPackages(category types.PackageCategory) {
@@ -74,14 +77,18 @@ func (m *Model) setPackageList(packages []entities.Package, category types.Packa
 	}
 
 	delegate := list.NewDefaultDelegate()
-	m.packageList = list.New(rowItems, delegate, m.width, m.height-4)
+	m.packageList = list.New(rowItems, delegate, m.width, m.height-theme.ListVerticalReserve())
 
 	if titleOverride != nil {
 		m.packageList.Title = *titleOverride
 	} else {
 		m.packageList.Title = theme.InstallerBreadcrumb(theme.InstallerPackageSectionTitle(category))
 	}
-	m.packageList.SetShowStatusBar(false)
+	m.packageList.FilterInput.Prompt = "Filtrar: "
+	m.packageList.SetShowHelp(false)
+	m.packageList.SetShowStatusBar(true)
+	m.packageList.SetStatusBarItemName("pacote", "pacotes")
+	m.packageList.SetFilteringEnabled(true)
 }
 
 func (m *Model) loadInstallerCategories() {
@@ -101,9 +108,11 @@ func (m *Model) loadInstallerCategories() {
 			},
 		},
 		items.InstallerCategoryItem{
-			Heading:   "🧰 Utilitários",
-			Desc:      "VPN, Flatpak, periféricos e pacotes nativos",
-			Utilities: true,
+			Heading: "🧰 Utilitários",
+			Desc:    "VPN, Flatpak, periféricos e pacotes nativos (mesmo fluxo que os outros instaladores)",
+			Categories: []types.PackageCategory{
+				types.PackageCategoryUtilities,
+			},
 		},
 		items.InstallerCategoryItem{
 			Heading: "🔧 Ferramentas de desenvolvimento",
@@ -157,7 +166,23 @@ func (m *Model) loadInstallerCategories() {
 	}
 
 	delegate := list.NewDefaultDelegate()
-	m.installerList = list.New(rowItems, delegate, m.width, m.height-4)
+	m.installerList = list.New(rowItems, delegate, m.width, m.height-theme.ListVerticalReserve())
 	m.installerList.Title = "📦 Instaladores"
 	m.installerList.SetShowStatusBar(false)
+}
+
+func (m *Model) reloadScriptList() {
+	idx := m.scriptList.Index()
+	m.loadScriptsWithParent(m.scriptListCategory, m.scriptListParent)
+	items := m.scriptList.Items()
+	if len(items) == 0 {
+		return
+	}
+	if idx < 0 {
+		idx = 0
+	}
+	if idx >= len(items) {
+		idx = len(items) - 1
+	}
+	m.scriptList.Select(idx)
 }

@@ -65,9 +65,10 @@ Navegação: `↑/↓`, `Space` para marcar, `n`/`→` próximo passo, `Esc` vol
 From the main menu:
 
 - **🧹 Limpeza do Sistema** — cleanup scripts (Docker, npm, apt caches, large files)
-- **📊 Monitoramento** — battery and memory info
+- **📊 Monitoramento** — native panels (no bash): battery, memory/swap, disk by mount, CPU load, network counters and throughput, temperature (sysfs), failing **systemd --user** units (auto-refresh ~3s)
+- **⚙️ Configurações** — installer catalog URL, light/dark theme, script root, dotfiles path, confirmation toggles (`~/.config/homestead/preferences.yaml`; `HOMESTEAD_CATALOG_URL` overrides the saved URL)
 
-Select a script, confirm, and it runs with live output in your terminal.
+For **Monitoramento**, pick an item and confirm to open the panel. For bash scripts under **Limpeza**, confirm runs the script with live output in the TUI.
 
 ## 5. Development setup
 
@@ -108,4 +109,4 @@ make build
 
 ---
 
-See [README.md](README.md) for a full feature overview, and [docs/](docs/) for architecture documentation.
+See [README.md](README.md) for a full feature overview. Documentation hub: [docs/INDEX.md](docs/INDEX.md) (product context, architecture, testing).

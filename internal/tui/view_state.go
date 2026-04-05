@@ -14,11 +14,13 @@ const (
 	ViewZshWizard
 	ViewZshApplying
 	ViewZshRepoWizard
+	ViewSettings
 )
 
 const (
 	menuActionCleanup    = "cleanup"
 	menuActionMonitoring = "monitoring"
+	menuActionCheckup    = "checkup"
 	menuActionInstallers = "installers"
 	menuActionZshPlugins = "zsh_plugins"
 	menuActionZshRepo    = "zsh_repo"

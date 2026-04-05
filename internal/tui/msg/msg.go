@@ -1,8 +1,8 @@
-// Package msg defines Bubble Tea message types used by the Homestead TUI.
 package msg
 
 import (
 	"github.com/JaimeJunr/Homestead/internal/domain/interfaces"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/preferences"
 	"github.com/JaimeJunr/Homestead/internal/monitoring"
 )
 
@@ -44,10 +44,21 @@ type CatalogFetched struct {
 }
 
 type NativeMonitorReload struct {
-	Kind    string
-	Battery *monitoring.BatterySnapshot
-	Memory  *monitoring.MemorySnapshot
-	Err     error
+	Kind        string
+	Battery     *monitoring.BatterySnapshot
+	Memory      *monitoring.MemorySnapshot
+	Disk        []monitoring.DiskMount
+	Load        *monitoring.LoadSnapshot
+	Network     *monitoring.NetworkSnapshot
+	Thermal     *monitoring.ThermalSnapshot
+	SystemdUser *monitoring.SystemdUserFailedSnapshot
+	Err         error
 }
 
 type NativeMonitorTick struct{}
+
+type SettingsSaved struct {
+	Prefs preferences.Preferences
+}
+
+type SettingsCancelled struct{}

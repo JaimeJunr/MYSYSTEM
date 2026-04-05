@@ -12,7 +12,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/JaimeJunr/Homestead/internal/app/services"
 	"github.com/JaimeJunr/Homestead/internal/domain/entities"
+	"github.com/JaimeJunr/Homestead/internal/domain/interfaces"
 	"github.com/JaimeJunr/Homestead/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/catalog"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/preferences"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/profilestate"
 	"github.com/JaimeJunr/Homestead/internal/monitoring"
 	"github.com/JaimeJunr/Homestead/internal/tui/cmds"
 	"github.com/JaimeJunr/Homestead/internal/tui/items"
@@ -33,13 +37,14 @@ type Model struct {
 	packageList      list.Model
 	selectedMenu     int
 	selectedItem     interface{} // Can be Script or Package
-	confirmYes       bool        // true = yes selected, false = no selected
-	confirmReturn    ViewState   // tela para voltar se cancelar a confirmação (lista de pacotes/scripts)
-	confirmReturnOK  bool        // se false, cancelar volta ao menu principal
+	confirmYes       bool
+	confirmReturn    ViewState // view to restore when confirmation is cancelled
+	confirmReturnOK  bool      // if false, cancel returns to main menu
+	scriptDryRunNext bool      // next bash run uses HOMESTEAD_DRY_RUN=1 (key d)
 	width            int
 	height           int
 	err              error
-	keyboardToast    string // feedback para o/c (abrir/copiar URL) sem mouse
+	keyboardToast    string // transient open/copy URL feedback
 
 	// Installation progress
 	progress       progress.Model
@@ -50,76 +55,137 @@ type Model struct {
 	canAbort       bool
 	aborted        bool
 
-	// Zsh plugins wizard (Plugins e temas Zsh)
 	zshWizard *ZshWizardModel
 
-	// Zsh repo wizard (Configurar Zsh - backup/migração via repositório)
 	zshRepoWizard *ZshRepoModel
 
-	// Zsh core: when true, "Plugins e temas Zsh" is shown in menu (oh-my-zsh installed)
 	zshCoreInstalled bool
 	zshCoreChecked   bool
 
-	// Zsh apply feedback: phase "applying" | "success" | "error"
 	zshApplyPhase string
 	zshApplyError error
 
-	// Script output (in-TUI); phase "running" | "done"
 	scriptOutputView  viewport.Model
 	scriptOutputPhase string
 	scriptOutputTitle string
 	scriptOutputErr   error
 
-	// Monitores integrados (bateria / memória)
 	nativeMonitorKind string
 	nativeBattery     *monitoring.BatterySnapshot
 	nativeBatteryErr  error
 	nativeMemory      *monitoring.MemorySnapshot
 	nativeMemoryErr   error
+	nativeDisk        []monitoring.DiskMount
+	nativeDiskErr     error
+	nativeLoad        *monitoring.LoadSnapshot
+	nativeLoadErr     error
+	nativeNetwork     *monitoring.NetworkSnapshot
+	nativeNetworkErr  error
+	nativeNetworkAt   time.Time
+	nativeNetRates    map[string]monitoring.NetRates
+	nativeThermal     *monitoring.ThermalSnapshot
+	nativeThermalErr  error
+	nativeSystemdUser *monitoring.SystemdUserFailedSnapshot
+	nativeSystemdErr  error
 
-	// scriptListParent: para onde Esc volta a partir de ViewScriptList (menu principal ou categorias de instaladores).
-	scriptListParent ViewState
-	// scriptListAsInstaller: lista de utilitários aberta a partir de Instaladores (UX alinhada a pacotes).
-	scriptListAsInstaller bool
+	scriptListParent ViewState // Esc target from script list (main menu or installer categories)
+	scriptListCategory types.Category
 
-	// Installer package list: categories filter for the current ViewPackageList (refresh after remote catalog).
+	profile                 *profilestate.State
+	profilePath             string
+	pendingInstallPackageID string
+
 	packageListCategories []types.PackageCategory
 	catalogURL            string
+
+	prefs         preferences.Preferences
+	prefsPath     string
+	catalogEnvSet bool
+	settingsModel *SettingsModel
+
+	helpOpen bool
 }
 
-// NewModel creates the TUI model with dependencies injected.
-// catalogURL may be empty to skip remote catalog fetch (e.g. tests).
-func NewModel(scriptService *services.ScriptService, installerService *services.InstallerService, configService *services.ConfigService, repoService *services.RepoService, catalogURL string) Model {
-	mainItems := getMainMenuItems(false) // will refresh when zsh core check completes
+// NewModel wires the TUI. Empty catalogURL skips remote catalog fetch (tests).
+func NewModel(scriptService *services.ScriptService, installerService *services.InstallerService, configService *services.ConfigService, repoService *services.RepoService, catalogURL string, prefs preferences.Preferences, prefsPath string, catalogEnvSet bool, profile *profilestate.State, profilePath string) Model {
+	prefs.Normalize()
+	theme.ApplyPreferences(prefs)
+
+	mainItems := getMainMenuItems(false)
 	mainList := list.New(mainItems, list.NewDefaultDelegate(), 0, 0)
 	mainList.Title = "Homestead - Gerenciador de Sistema"
 	mainList.SetShowStatusBar(false)
 	mainList.SetFilteringEnabled(false)
 
-	prog := progress.New(progress.WithDefaultGradient())
+	progOpts := []progress.Option{progress.WithWidth(40)}
+	if prefs.ReduceMotion {
+		progOpts = append(progOpts, progress.WithSolidFill("#888888"))
+	} else {
+		progOpts = append(progOpts, progress.WithDefaultGradient())
+	}
+	prog := progress.New(progOpts...)
 
 	spin := spinner.New()
 	spin.Spinner = spinner.Dot
 
+	if profile == nil {
+		profile = &profilestate.State{}
+	}
 	return Model{
 		scriptService:         scriptService,
 		installerService:      installerService,
 		configService:         configService,
 		repoService:           repoService,
 		catalogURL:            catalogURL,
+		prefs:                 prefs,
+		prefsPath:             prefsPath,
+		catalogEnvSet:         catalogEnvSet,
+		profile:               profile,
+		profilePath:           profilePath,
 		state:                 ViewMainMenu,
 		mainMenu:              mainList,
 		progress:              prog,
 		spinner:               spin,
 		confirmYes:            false,
+		scriptDryRunNext:      false,
 		scriptListParent:      ViewMainMenu,
-		scriptListAsInstaller: false,
 	}
+}
+
+func listAbsorbsFilterKey(l list.Model, msg tea.KeyMsg) (list.Model, tea.Cmd, bool) {
+	if l.SettingFilter() {
+		next, cmd := l.Update(msg)
+		return next, cmd, true
+	}
+	if l.IsFiltered() && msg.Type == tea.KeyEsc {
+		next, cmd := l.Update(msg)
+		return next, cmd, true
+	}
+	return l, nil, false
+}
+
+func forwardListFilterKey(m Model, msg tea.KeyMsg) (Model, tea.Cmd, bool) {
+	switch m.state {
+	case ViewScriptList:
+		if next, cmd, ok := listAbsorbsFilterKey(m.scriptList, msg); ok {
+			m.scriptList = next
+			return m, cmd, true
+		}
+	case ViewPackageList:
+		if next, cmd, ok := listAbsorbsFilterKey(m.packageList, msg); ok {
+			m.packageList = next
+			return m, cmd, true
+		}
+	}
+	return m, nil, false
 }
 
 // Init initializes the model
 func (m Model) Init() tea.Cmd {
-	batch := []tea.Cmd{m.spinner.Tick, cmds.CheckZshCoreInstalled(m.installerService)}
+	batch := []tea.Cmd{cmds.CheckZshCoreInstalled(m.installerService)}
+	if !m.prefs.ReduceMotion {
+		batch = append([]tea.Cmd{m.spinner.Tick}, batch...)
+	}
 	if c := cmds.FetchCatalog(m.catalogURL, m.installerService); c != nil {
 		batch = append(batch, c)
 	}
@@ -140,15 +206,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.mainMenu.SetSize(msg.Width, msg.Height-4)
+		if m.state == ViewSettings && m.settingsModel != nil {
+			newS, _ := m.settingsModel.Update(msg)
+			sm := newS.(SettingsModel)
+			m.settingsModel = &sm
+		}
+		reserve := theme.ListVerticalReserve()
+		m.mainMenu.SetSize(msg.Width, msg.Height-reserve)
 		if m.scriptList.Items() != nil {
-			m.scriptList.SetSize(msg.Width, msg.Height-4)
+			m.scriptList.SetSize(msg.Width, msg.Height-reserve)
 		}
 		if m.installerList.Items() != nil {
-			m.installerList.SetSize(msg.Width, msg.Height-4)
+			m.installerList.SetSize(msg.Width, msg.Height-reserve)
 		}
 		if m.packageList.Items() != nil {
-			m.packageList.SetSize(msg.Width, msg.Height-4)
+			m.packageList.SetSize(msg.Width, msg.Height-reserve)
 		}
 		if m.state == ViewScriptOutput {
 			m.syncScriptOutputViewport()
@@ -171,6 +243,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case btmsg.InstallComplete:
 		m.state = ViewMainMenu
 		m.aborted = false
+		if msg.Err == nil && m.profile != nil && strings.TrimSpace(m.pendingInstallPackageID) != "" && strings.TrimSpace(m.profilePath) != "" {
+			profilestate.RecordInstalled(m.profile, m.pendingInstallPackageID)
+			if err := profilestate.Save(m.profilePath, *m.profile); err != nil {
+				m.err = fmt.Errorf("gravar perfil: %w", err)
+			}
+		}
+		m.pendingInstallPackageID = ""
 		return m, cmds.CheckZshCoreInstalled(m.installerService)
 
 	case btmsg.ZshCoreInstalled:
@@ -180,11 +259,32 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case spinner.TickMsg:
+		if m.prefs.ReduceMotion {
+			return m, nil
+		}
 		var cmd tea.Cmd
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
 
 	case tea.KeyMsg:
+		if m.helpOpen {
+			switch msg.String() {
+			case "esc", "?", "q":
+				m.helpOpen = false
+			}
+			return m, nil
+		}
+		if msg.String() == "?" && !m.suppressHelpHotkey() {
+			m.helpOpen = true
+			return m, nil
+		}
+
+		if m.state == ViewSettings && m.settingsModel != nil {
+			newS, cmd := m.settingsModel.Update(msg)
+			sm := newS.(SettingsModel)
+			m.settingsModel = &sm
+			return m, cmd
+		}
 		if m.state == ViewScriptOutput {
 			if m.scriptOutputPhase == "done" {
 				switch msg.String() {
@@ -206,8 +306,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "enter", "esc", "q":
 				m.state = m.confirmReturn
 				m.nativeMonitorKind = ""
-				m.nativeBattery, m.nativeMemory = nil, nil
-				m.nativeBatteryErr, m.nativeMemoryErr = nil, nil
+				m = m.withClearedNativeMonitors()
 				return m, nil
 			case "r":
 				return m, m.nativeMonitorLoadCmd()
@@ -226,7 +325,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		if m.state != ViewZshWizard && m.state != ViewZshRepoWizard {
+			if next, cmd, ok := forwardListFilterKey(m, msg); ok {
+				return next, cmd
+			}
 			switch msg.String() {
+			case "f":
+				if m.state == ViewScriptList {
+					return m.handleToggleScriptFavorite()
+				}
+			case "d", "D":
+				if m.state == ViewScriptList {
+					return m.handleScriptDryRun()
+				}
 			case "ctrl+c", "q":
 				if m.state == ViewMainMenu {
 					return m, tea.Quit
@@ -235,6 +345,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.aborted = true
 					m.installMessage = "Instalação abortada pelo usuário"
 					m.state = ViewMainMenu
+					m.pendingInstallPackageID = ""
 					return m, nil
 				}
 			case "esc":
@@ -341,8 +452,37 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case entities.NativeMonitorMemory:
 			m.nativeMemory = msg.Memory
 			m.nativeMemoryErr = msg.Err
+		case entities.NativeMonitorDisk:
+			m.nativeDisk = msg.Disk
+			m.nativeDiskErr = msg.Err
+		case entities.NativeMonitorLoad:
+			m.nativeLoad = msg.Load
+			m.nativeLoadErr = msg.Err
+		case entities.NativeMonitorNetwork:
+			now := time.Now()
+			if msg.Err == nil && msg.Network != nil && m.nativeNetwork != nil && !m.nativeNetworkAt.IsZero() {
+				dt := now.Sub(m.nativeNetworkAt).Seconds()
+				if dt >= 0.2 {
+					m.nativeNetRates = monitoring.ComputeNetRates(m.nativeNetwork, msg.Network, dt)
+				}
+			}
+			if msg.Err != nil {
+				m.nativeNetwork = nil
+				m.nativeNetworkAt = time.Time{}
+				m.nativeNetRates = nil
+			} else {
+				m.nativeNetwork = msg.Network
+				m.nativeNetworkAt = now
+			}
+			m.nativeNetworkErr = msg.Err
+		case entities.NativeMonitorThermal:
+			m.nativeThermal = msg.Thermal
+			m.nativeThermalErr = msg.Err
+		case entities.NativeMonitorSystemdUser:
+			m.nativeSystemdUser = msg.SystemdUser
+			m.nativeSystemdErr = msg.Err
 		}
-		return m, nativeMonitorScheduleTick()
+		return m, m.nativeMonitorScheduleTick()
 
 	case btmsg.NativeMonitorTick:
 		if m.state != ViewNativeMonitor {
@@ -388,6 +528,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case btmsg.ClearKeyboardToast:
 		m.keyboardToast = ""
 		return m, nil
+
+	case btmsg.SettingsSaved:
+		m.state = ViewMainMenu
+		m.settingsModel = nil
+		return m.applySavedPreferences(msg.Prefs)
+
+	case btmsg.SettingsCancelled:
+		m.state = ViewMainMenu
+		m.settingsModel = nil
+		return m, nil
+	}
+
+	if m.state == ViewSettings && m.settingsModel != nil {
+		newS, cmd := m.settingsModel.Update(msg)
+		sm := newS.(SettingsModel)
+		m.settingsModel = &sm
+		return m, cmd
 	}
 
 	if m.state == ViewZshWizard && m.zshWizard != nil {
@@ -440,6 +597,137 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+func (m Model) handleScriptDryRun() (tea.Model, tea.Cmd) {
+	sel := m.scriptList.SelectedItem()
+	si, ok := sel.(items.ScriptItem)
+	if !ok || !si.Script.SupportsDryRun || si.Script.NativeMonitor != "" {
+		return m, nil
+	}
+	m.selectedItem = si.Script
+	m.confirmReturn = ViewScriptList
+	m.confirmReturnOK = true
+	m.scriptDryRunNext = true
+	return m.handleConfirmedSelection()
+}
+
+func (m Model) handleToggleScriptFavorite() (tea.Model, tea.Cmd) {
+	if m.profile == nil {
+		return m, nil
+	}
+	sel := m.scriptList.SelectedItem()
+	si, ok := sel.(items.ScriptItem)
+	if !ok {
+		return m, nil
+	}
+	profilestate.ToggleFavorite(m.profile, si.Script.ID)
+	if strings.TrimSpace(m.profilePath) != "" {
+		if err := profilestate.Save(m.profilePath, *m.profile); err != nil {
+			m.err = fmt.Errorf("gravar perfil: %w", err)
+			return m, nil
+		}
+	}
+	m.reloadScriptList()
+	return m, nil
+}
+
+func (m Model) handleConfirmedSelection() (tea.Model, tea.Cmd) {
+	switch item := m.selectedItem.(type) {
+	case entities.Script:
+		if item.NativeMonitor != "" {
+			m.scriptDryRunNext = false
+			m = m.withClearedNativeMonitors()
+			m.nativeMonitorKind = item.NativeMonitor
+			m.state = ViewNativeMonitor
+			return m, m.nativeMonitorLoadCmd()
+		}
+		dry := m.scriptDryRunNext
+		m.scriptDryRunNext = false
+		opts := interfaces.ScriptExecOpts{DryRun: dry}
+		m.scriptOutputTitle = item.Name
+		if dry {
+			m.scriptOutputTitle = item.Name + " (simulação)"
+		}
+		m.scriptOutputPhase = "running"
+		m.scriptOutputErr = nil
+		m.scriptOutputView = newScriptOutputViewport(m.width, m.height)
+		m.state = ViewScriptOutput
+		if item.RequiresSudo {
+			cmd, err := m.scriptService.ScriptInteractiveCommand(item.ID, opts)
+			if err != nil {
+				m.state = m.confirmReturn
+				m.scriptOutputPhase = ""
+				m.scriptOutputTitle = ""
+				m.err = err
+				return m, nil
+			}
+			return m, tea.ExecProcess(cmd, func(execErr error) tea.Msg {
+				return btmsg.ScriptExecFinished{Err: execErr}
+			})
+		}
+		return m, cmds.RunScriptCapture(m.scriptService, item.ID, opts)
+	case entities.Package:
+		m.state = ViewInstalling
+		m.pendingInstallPackageID = item.ID
+		m.installStatus = "preparing"
+		m.installMessage = "Preparando instalação..."
+		m.installPercent = 0
+		m.canAbort = false
+		m.aborted = false
+		return m, cmds.InstallPackage(m.installerService, item.ID)
+	}
+	return m, nil
+}
+
+func (m Model) applySavedPreferences(p preferences.Preferences) (tea.Model, tea.Cmd) {
+	p.Normalize()
+	theme.ApplyPreferences(p)
+	m.prefs = p
+	if err := m.scriptService.ConfigureScriptRoot(p.ScriptRoot); err != nil {
+		m.err = err
+	}
+	if err := m.installerService.ConfigureHomesteadRoot(p.ScriptRoot); err != nil {
+		m.err = err
+	}
+	dotfiles := p.DotfilesRepo
+	if strings.TrimSpace(dotfiles) == "" {
+		dotfiles = preferences.DefaultDotfilesRepo()
+	}
+	newRepo, err := services.NewRepoService(dotfiles)
+	if err != nil {
+		m.err = err
+	} else {
+		m.repoService = newRepo
+		if m.zshRepoWizard != nil {
+			m.zshRepoWizard.repoService = newRepo
+		}
+	}
+	m.catalogURL = catalog.EffectiveCatalogURL(p.CatalogURL)
+	if strings.TrimSpace(m.prefsPath) != "" {
+		if err := preferences.Save(m.prefsPath, p); err != nil {
+			m.err = err
+		}
+	}
+	if m.width > 0 && m.height > 0 {
+		r := theme.ListVerticalReserve()
+		m.mainMenu.SetSize(m.width, m.height-r)
+		if m.scriptList.Items() != nil {
+			m.scriptList.SetSize(m.width, m.height-r)
+		}
+		if m.installerList.Items() != nil {
+			m.installerList.SetSize(m.width, m.height-r)
+		}
+		if m.packageList.Items() != nil {
+			m.packageList.SetSize(m.width, m.height-r)
+		}
+		m.syncScriptOutputViewport()
+	}
+	var batch []tea.Cmd
+	if c := cmds.FetchCatalog(m.catalogURL, m.installerService); c != nil {
+		batch = append(batch, c)
+	}
+	return m, tea.Batch(batch...)
+}
+
 // handleEnter handles the enter key based on current state
 func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 	switch m.state {
@@ -458,9 +746,13 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 			m.state = ViewScriptList
 			m.selectedMenu = 1
 			m.loadScripts(types.CategoryMonitoring)
+		case menuActionCheckup:
+			m.state = ViewScriptList
+			m.selectedMenu = 2
+			m.loadScripts(types.CategoryCheckup)
 		case menuActionInstallers:
 			m.state = ViewInstallerCategories
-			m.selectedMenu = 2
+			m.selectedMenu = 3
 			m.loadInstallerCategories()
 		case menuActionZshPlugins:
 			m.state = ViewZshWizard
@@ -478,7 +770,12 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 		case menuActionQuit:
 			return m, tea.Quit
 		case menuActionSettings:
-			return m, nil
+			sm := NewSettingsModel(m.prefs, m.prefsPath, m.catalogEnvSet)
+			sm.width = m.width
+			sm.height = m.height
+			m.settingsModel = &sm
+			m.state = ViewSettings
+			return m, m.settingsModel.Init()
 		default:
 			return m, nil
 		}
@@ -486,21 +783,30 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 	case ViewScriptList:
 		selected := m.scriptList.SelectedItem()
 		if scriptItem, ok := selected.(items.ScriptItem); ok {
+			m.scriptDryRunNext = false
 			m.selectedItem = scriptItem.Script
-			m.state = ViewConfirmation
-			m.confirmYes = false
 			m.confirmReturn = ViewScriptList
 			m.confirmReturnOK = true
+			if m.prefs.ConfirmBeforeScript {
+				m.state = ViewConfirmation
+				m.confirmYes = false
+			} else {
+				return m.handleConfirmedSelection()
+			}
 		}
 
 	case ViewPackageList:
 		selected := m.packageList.SelectedItem()
 		if pkgItem, ok := selected.(items.PackageItem); ok {
 			m.selectedItem = pkgItem.Pkg
-			m.state = ViewConfirmation
-			m.confirmYes = false
 			m.confirmReturn = ViewPackageList
 			m.confirmReturnOK = true
+			if m.prefs.ConfirmBeforePackage {
+				m.state = ViewConfirmation
+				m.confirmYes = false
+			} else {
+				return m.handleConfirmedSelection()
+			}
 		}
 
 	case ViewInstallerCategories:
@@ -508,11 +814,6 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 		catItem, ok := selected.(items.InstallerCategoryItem)
 		if !ok {
 			break
-		}
-		if catItem.Utilities {
-			m.state = ViewScriptList
-			m.loadScriptsWithParent(types.CategoryUtilities, ViewInstallerCategories)
-			return m, nil
 		}
 		if len(catItem.Categories) > 0 {
 			m.state = ViewPackageList
@@ -522,43 +823,7 @@ func (m Model) handleEnter() (tea.Model, tea.Cmd) {
 
 	case ViewConfirmation:
 		if m.confirmYes {
-			switch item := m.selectedItem.(type) {
-			case entities.Script:
-				if item.NativeMonitor != "" {
-					m.nativeMonitorKind = item.NativeMonitor
-					m.nativeBattery, m.nativeMemory = nil, nil
-					m.nativeBatteryErr, m.nativeMemoryErr = nil, nil
-					m.state = ViewNativeMonitor
-					return m, m.nativeMonitorLoadCmd()
-				}
-				m.scriptOutputTitle = item.Name
-				m.scriptOutputPhase = "running"
-				m.scriptOutputErr = nil
-				m.scriptOutputView = newScriptOutputViewport(m.width, m.height)
-				m.state = ViewScriptOutput
-				if item.RequiresSudo {
-					cmd, err := m.scriptService.ScriptInteractiveCommand(item.ID)
-					if err != nil {
-						m.state = m.confirmReturn
-						m.scriptOutputPhase = ""
-						m.scriptOutputTitle = ""
-						m.err = err
-						return m, nil
-					}
-					return m, tea.ExecProcess(cmd, func(execErr error) tea.Msg {
-						return btmsg.ScriptExecFinished{Err: execErr}
-					})
-				}
-				return m, cmds.RunScriptCapture(m.scriptService, item.ID)
-			case entities.Package:
-				m.state = ViewInstalling
-				m.installStatus = "preparing"
-				m.installMessage = "Preparando instalação..."
-				m.installPercent = 0
-				m.canAbort = false
-				m.aborted = false
-				return m, cmds.InstallPackage(m.installerService, item.ID)
-			}
+			return m.handleConfirmedSelection()
 		} else {
 			if m.confirmReturnOK {
 				m.state = m.confirmReturn

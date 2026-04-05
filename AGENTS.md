@@ -34,7 +34,7 @@ Homestead is a Go CLI with a Bubble Tea TUI for Linux maintenance: run bundled b
 
 1. TUI selects a script → `ScriptService` loads `entities.Script` from `ScriptRepository`.
 2. `BashExecutor` validates paths / permissions; executes bash (or builds interactive `exec.Cmd` for sudo/TTY).
-3. Native monitors use `NativeMonitor` on `entities.Script` (`battery` / `memory`) with TUI-side handling (no bash path).
+3. Native monitors use `NativeMonitor` on `entities.Script` with TUI-side handling (no bash path): `battery`, `memory`, `disk`, `load`, `network`, `thermal`, `systemd-user` (see `internal/domain/entities/script.go` and `internal/monitoring/`).
 
 Categories include `cleanup`, `monitoring`, `install`, `utilities` (`internal/domain/types/category.go`).
 

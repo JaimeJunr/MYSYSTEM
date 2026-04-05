@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"strings"
 
 	"github.com/JaimeJunr/Homestead/internal/domain/entities"
 	"github.com/JaimeJunr/Homestead/internal/domain/interfaces"
@@ -18,20 +19,57 @@ type BashExecutor struct {
 	rootDir string
 }
 
-// NewBashExecutor creates a new bash executor
 func NewBashExecutor() interfaces.ScriptExecutor {
-	rootDir, err := os.Getwd()
-	if err != nil {
-		// Fallback to empty string, will be relative paths
-		rootDir = ""
-	}
-
-	return &BashExecutor{
-		rootDir: rootDir,
-	}
+	return NewBashExecutorWithRoot("")
 }
 
-func (e *BashExecutor) newScriptCmd(script *entities.Script) (*exec.Cmd, error) {
+func NewBashExecutorWithRoot(root string) interfaces.ScriptExecutor {
+	e := &BashExecutor{}
+	_ = e.SetScriptRoot(root)
+	return e
+}
+
+// ResolveScriptRoot returns the absolute script/repo root; empty dir means cwd.
+func ResolveScriptRoot(dir string) (string, error) {
+	return expandScriptRoot(dir)
+}
+
+func expandScriptRoot(path string) (string, error) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return "", fmt.Errorf("get working directory: %w", err)
+		}
+		return filepath.Clean(cwd), nil
+	}
+	if path == "~" || strings.HasPrefix(path, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("home dir: %w", err)
+		}
+		if path == "~" {
+			return filepath.Clean(home), nil
+		}
+		return filepath.Clean(filepath.Join(home, path[2:])), nil
+	}
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Clean(abs), nil
+}
+
+func (e *BashExecutor) SetScriptRoot(dir string) error {
+	root, err := expandScriptRoot(dir)
+	if err != nil {
+		return err
+	}
+	e.rootDir = root
+	return nil
+}
+
+func (e *BashExecutor) newScriptCmd(script *entities.Script, opts interfaces.ScriptExecOpts) (*exec.Cmd, error) {
 	if script.NativeMonitor != "" {
 		return nil, fmt.Errorf("native monitor script %s", script.ID)
 	}
@@ -58,12 +96,15 @@ func (e *BashExecutor) newScriptCmd(script *entities.Script) (*exec.Cmd, error) 
 		fmt.Sprintf("REAL_HOME=%s", currentUser.HomeDir),
 		fmt.Sprintf("HOMESTEAD_ROOT=%s", e.rootDir),
 	)
+	if opts.DryRun {
+		cmd.Env = append(cmd.Env, "HOMESTEAD_DRY_RUN=1")
+	}
 
 	return cmd, nil
 }
 
 // Execute executes a bash script attached to the current terminal
-func (e *BashExecutor) Execute(script *entities.Script) error {
+func (e *BashExecutor) Execute(script *entities.Script, opts interfaces.ScriptExecOpts) error {
 	if err := e.Validate(script); err != nil {
 		return fmt.Errorf("execute script %s: %w", script.ID, err)
 	}
@@ -71,7 +112,7 @@ func (e *BashExecutor) Execute(script *entities.Script) error {
 		return fmt.Errorf("execute script %s: native monitor (use o TUI): %w", script.ID, types.ErrInvalidInput)
 	}
 
-	cmd, err := e.newScriptCmd(script)
+	cmd, err := e.newScriptCmd(script, opts)
 	if err != nil {
 		return err
 	}
@@ -88,7 +129,7 @@ func (e *BashExecutor) Execute(script *entities.Script) error {
 }
 
 // ExecuteCapture runs the script and returns combined stdout/stderr (no TTY).
-func (e *BashExecutor) ExecuteCapture(script *entities.Script) (string, error) {
+func (e *BashExecutor) ExecuteCapture(script *entities.Script, opts interfaces.ScriptExecOpts) (string, error) {
 	if err := e.Validate(script); err != nil {
 		return "", fmt.Errorf("execute script %s: %w", script.ID, err)
 	}
@@ -96,7 +137,7 @@ func (e *BashExecutor) ExecuteCapture(script *entities.Script) (string, error) {
 		return "", fmt.Errorf("execute script %s: native monitor: %w", script.ID, types.ErrInvalidInput)
 	}
 
-	cmd, err := e.newScriptCmd(script)
+	cmd, err := e.newScriptCmd(script, opts)
 	if err != nil {
 		return "", err
 	}
@@ -115,14 +156,14 @@ func (e *BashExecutor) ExecuteCapture(script *entities.Script) (string, error) {
 }
 
 // InteractiveCommand returns a command for tea.ExecProcess (sudo / password prompts).
-func (e *BashExecutor) InteractiveCommand(script *entities.Script) (*exec.Cmd, error) {
+func (e *BashExecutor) InteractiveCommand(script *entities.Script, opts interfaces.ScriptExecOpts) (*exec.Cmd, error) {
 	if err := e.Validate(script); err != nil {
 		return nil, fmt.Errorf("execute script %s: %w", script.ID, err)
 	}
 	if script.NativeMonitor != "" {
 		return nil, fmt.Errorf("execute script %s: native monitor: %w", script.ID, types.ErrInvalidInput)
 	}
-	return e.newScriptCmd(script)
+	return e.newScriptCmd(script, opts)
 }
 
 // CanExecute checks if a script can be executed

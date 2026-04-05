@@ -1,4 +1,4 @@
-.PHONY: build run install clean test test-verbose test-coverage test-short test-integration help tidy
+.PHONY: build run install clean test test-verbose test-coverage test-short test-integration test-smoke help tidy
 
 # Build configuration
 BINARY_NAME=homestead
@@ -60,6 +60,11 @@ test-integration:
 	@echo "🧪 Running integration tests..."
 	go test -v -run Integration ./...
 
+# Black-box smoke: build binary and run -version (skipped with -short)
+test-smoke:
+	@echo "🧪 Running smoke tests..."
+	go test -v -count=1 -run TestSmoke_ .
+
 # Run tests and open coverage in browser
 test-coverage-html: test-coverage
 	@echo "🌐 Opening coverage report in browser..."
@@ -92,8 +97,9 @@ help:
 	@echo "  make test-verbose       - Run tests with verbose output"
 	@echo "  make test-coverage      - Run tests with coverage report"
 	@echo "  make test-coverage-html - Run tests and open coverage in browser"
-	@echo "  make test-short         - Run only unit tests (skip integration)"
+	@echo "  make test-short         - Run only unit tests (skip integration and smoke)"
 	@echo "  make test-integration   - Run only integration tests"
+	@echo "  make test-smoke         - Build CLI and verify -version (E2E-style smoke)"
 	@echo "  make benchmark          - Run benchmark tests"
 	@echo ""
 	@echo "Dependencies:"

@@ -421,6 +421,7 @@ func BenchmarkComplexOperation(b *testing.B) {
 **Última atualização**: 2026-03-14
 
 Para mais informações, consulte:
-- **README.md** - Documentação geral
-- **GETTING_STARTED.md** - Como começar
-- **CLAUDE.md** - Arquitetura do projeto
+- **[docs/INDEX.md](INDEX.md)** — índice da documentação
+- **[README.md](../README.md)** — visão geral do projeto
+- **[GETTING_STARTED.md](../GETTING_STARTED.md)** — como começar
+- **[architecture/ARCHITECTURE.md](architecture/ARCHITECTURE.md)** — arquitetura

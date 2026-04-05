@@ -6,15 +6,17 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/JaimeJunr/Homestead/internal/app/services"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/config"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/executor"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/installer"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/preferences"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/profilestate"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/repository"
 	"github.com/JaimeJunr/Homestead/internal/tui/items"
 	btmsg "github.com/JaimeJunr/Homestead/internal/tui/msg"
 )
 
-// testModel creates a model for testing with mocked dependencies
 func testModel() Model {
 	scriptRepo := repository.NewInMemoryScriptRepository()
 	scriptExec := executor.NewBashExecutor()
@@ -27,7 +29,7 @@ func testModel() Model {
 	configManager := config.NewFileConfigManager("")
 	configService := services.NewConfigService(configManager)
 
-	return NewModel(scriptService, installerService, configService, nil, "")
+	return NewModel(scriptService, installerService, configService, nil, "", preferences.DefaultPreferences(), "", false, &profilestate.State{}, "")
 }
 
 func TestNewModel(t *testing.T) {
@@ -38,9 +40,8 @@ func TestNewModel(t *testing.T) {
 	}
 
 	items := model.mainMenu.Items()
-	// 6 items when zsh core not installed: Limpeza, Monitoramento, Instaladores, Configurar Zsh, Configurações, Sair
-	if len(items) != 6 {
-		t.Errorf("Expected 6 main menu items (zsh core not installed), got %d", len(items))
+	if len(items) != 7 {
+		t.Errorf("Expected 7 main menu items (zsh core not installed), got %d", len(items))
 	}
 
 	if model.scriptService == nil {
@@ -80,6 +81,12 @@ func TestViewStates(t *testing.T) {
 	if ViewZshApplying != 9 {
 		t.Errorf("ViewZshApplying should be 9, got %d", ViewZshApplying)
 	}
+	if ViewZshRepoWizard != 10 {
+		t.Errorf("ViewZshRepoWizard should be 10, got %d", ViewZshRepoWizard)
+	}
+	if ViewSettings != 11 {
+		t.Errorf("ViewSettings should be 11, got %d", ViewSettings)
+	}
 }
 
 func TestModelInit(t *testing.T) {
@@ -87,7 +94,39 @@ func TestModelInit(t *testing.T) {
 	cmd := model.Init()
 
 	if cmd == nil {
-		t.Error("Expected Init() to return spinner tick command")
+		t.Error("Expected Init() to return a non-nil batch command")
+	}
+}
+
+func TestModelInitReduceMotionNoSpinnerTick(t *testing.T) {
+	p := preferences.DefaultPreferences()
+	p.ReduceMotion = true
+	scriptRepo := repository.NewInMemoryScriptRepository()
+	scriptExec := executor.NewBashExecutor()
+	scriptService := services.NewScriptService(scriptRepo, scriptExec)
+	packageRepo := repository.NewInMemoryPackageRepository()
+	packageInstaller := installer.NewDefaultPackageInstaller()
+	installerService := services.NewInstallerService(packageRepo, packageInstaller)
+	configManager := config.NewFileConfigManager("")
+	configService := services.NewConfigService(configManager)
+	m := NewModel(scriptService, installerService, configService, nil, "", p, "", false, &profilestate.State{}, "")
+	cmd := m.Init()
+	if cmd == nil {
+		t.Fatal("expected Init cmd")
+	}
+}
+
+func TestHelpOverlayToggle(t *testing.T) {
+	m := testModel()
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'?'}})
+	m2 := next.(Model)
+	if !m2.helpOpen {
+		t.Fatal("expected helpOpen after ?")
+	}
+	next2, _ := m2.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m3 := next2.(Model)
+	if m3.helpOpen {
+		t.Fatal("expected help closed after Esc")
 	}
 }
 
@@ -141,6 +180,60 @@ func TestEscapeFromScriptList(t *testing.T) {
 
 	if m.state != ViewMainMenu {
 		t.Errorf("Expected state to return to ViewMainMenu, got %d", m.state)
+	}
+}
+
+func TestScriptListEscWhileFilteringStaysOnList(t *testing.T) {
+	model := testModel()
+	model.state = ViewScriptList
+	model.loadScripts(types.CategoryCleanup)
+	if len(model.scriptList.Items()) == 0 {
+		t.Skip("no scripts in cleanup category")
+	}
+	next, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	m := next.(Model)
+	if !m.scriptList.SettingFilter() {
+		t.Fatalf("expected SettingFilter after /, filter state=%v", m.scriptList.FilterState())
+	}
+	next, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = next.(Model)
+	if m.state != ViewScriptList {
+		t.Errorf("expected ViewScriptList, got state %d", m.state)
+	}
+	if m.scriptList.SettingFilter() || m.scriptList.IsFiltered() {
+		t.Errorf("expected filter cleared (SettingFilter=%v IsFiltered=%v)", m.scriptList.SettingFilter(), m.scriptList.IsFiltered())
+	}
+}
+
+func TestEscapeClearsAppliedScriptListFilter(t *testing.T) {
+	model := testModel()
+	model.state = ViewScriptList
+	model.loadScripts(types.CategoryCleanup)
+	listItems := model.scriptList.Items()
+	if len(listItems) == 0 {
+		t.Skip("no scripts in cleanup category")
+	}
+	first, ok := listItems[0].(items.ScriptItem)
+	if !ok || first.Script.Name == "" {
+		t.Fatal("expected at least one script with a name")
+	}
+	r := rune(first.Script.Name[0])
+	next, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'/'}})
+	m := next.(Model)
+	m2, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+	m = m2.(Model)
+	m3, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = m3.(Model)
+	if !m.scriptList.IsFiltered() {
+		t.Fatalf("expected FilterApplied, state=%v", m.scriptList.FilterState())
+	}
+	m4, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = m4.(Model)
+	if m.scriptList.IsFiltered() {
+		t.Error("esc should clear applied filter")
+	}
+	if m.state != ViewScriptList {
+		t.Errorf("expected ViewScriptList, got %d", m.state)
 	}
 }
 
@@ -382,7 +475,7 @@ func BenchmarkNewModel(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		NewModel(scriptService, installerService, configService, nil, "")
+		NewModel(scriptService, installerService, configService, nil, "", preferences.DefaultPreferences(), "", false, &profilestate.State{}, "")
 	}
 }
 

@@ -9,13 +9,13 @@ Ficheiros principais:
 
 | Ficheiro                                    | Conteúdo                                                              |
 | ------------------------------------------- | --------------------------------------------------------------------- |
-| `doc.go`                                    | Mapa da árvore (comentário de pacote)                                 |
 | `model.go`                                  | `Model`, `NewModel`, `Init`, `Update`, `handleEnter`                  |
 | `view_state.go`                             | `ViewState`, constantes de ações do menu                              |
 | `menu.go`                                   | Itens do menu principal (`getMainMenuItems`)                          |
 | `lists.go`                                  | Carregar listas (scripts, pacotes, categorias de instaladores)        |
 | `view_render.go`                            | `View()` e ecrãs (confirmação, progresso, saída de script, Zsh apply) |
-| `native_monitor.go`                         | Monitor integrado (bateria / memória)                                 |
+| `native_monitor.go`                         | Painéis nativos (bateria, RAM, disco, load, rede, térmico, systemd user) |
+| `settings_model.go`                         | Ecrã **Configurações** (YAML, catálogo, tema, caminhos, confirmações)   |
 | `zsh_wizard_model.go`                       | Wizard “Plugins e temas Zsh”                                          |
 | `zsh_repo_model.go`                         | Wizard “Configurar Zsh” (repositório)                                 |
 | `model_test.go`, `zsh_wizard_model_test.go` | Testes                                                                |
@@ -26,7 +26,7 @@ Ficheiros principais:
 ```go
 import "github.com/JaimeJunr/Homestead/internal/tui"
 
-model := tui.NewModel(scriptService, installerService, configService, repoService, catalogURL)
+model := tui.NewModel(scriptService, installerService, configService, repoService, catalogURL, prefs, prefsPath, catalogEnvSet)
 ```
 
 ## Subpacotes

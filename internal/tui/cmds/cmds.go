@@ -1,4 +1,3 @@
-// Package cmds provides tea.Cmd constructors for async TUI work.
 package cmds
 
 import (
@@ -44,9 +43,9 @@ func FetchCatalog(url string, svc *services.InstallerService) tea.Cmd {
 	}
 }
 
-func RunScriptCapture(service *services.ScriptService, scriptID string) tea.Cmd {
+func RunScriptCapture(service *services.ScriptService, scriptID string, opts interfaces.ScriptExecOpts) tea.Cmd {
 	return func() tea.Msg {
-		out, err := service.ExecuteScriptCapture(scriptID)
+		out, err := service.ExecuteScriptCapture(scriptID, opts)
 		return msg.ScriptCaptured{Output: out, Err: err}
 	}
 }

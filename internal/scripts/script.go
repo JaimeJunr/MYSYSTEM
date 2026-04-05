@@ -16,7 +16,7 @@ type Script struct {
 	Path         string
 	Category     string
 	RequiresSudo bool
-	Native string // battery | memory: só no TUI; Path pode ficar vazio
+	Native string // monitores nativos do TUI; Path pode ficar vazio
 }
 
 // ScriptCategory represents different categories of scripts
@@ -72,6 +72,51 @@ func GetAllScripts() []Script {
 			Category:     string(CategoryMonitoring),
 			RequiresSudo: false,
 			Native:       "memory",
+		},
+		{
+			ID:           "monitor-disk",
+			Name:         "Espaço em disco",
+			Description:  "Uso por ponto de montagem",
+			Path:         "",
+			Category:     string(CategoryMonitoring),
+			RequiresSudo: false,
+			Native:       "disk",
+		},
+		{
+			ID:           "monitor-load",
+			Name:         "Carga da CPU",
+			Description:  "Load average",
+			Path:         "",
+			Category:     string(CategoryMonitoring),
+			RequiresSudo: false,
+			Native:       "load",
+		},
+		{
+			ID:           "monitor-network",
+			Name:         "Rede (interfaces)",
+			Description:  "RX/TX e vazão simples",
+			Path:         "",
+			Category:     string(CategoryMonitoring),
+			RequiresSudo: false,
+			Native:       "network",
+		},
+		{
+			ID:           "monitor-thermal",
+			Name:         "Temperatura",
+			Description:  "Sensores em sysfs",
+			Path:         "",
+			Category:     string(CategoryMonitoring),
+			RequiresSudo: false,
+			Native:       "thermal",
+		},
+		{
+			ID:           "monitor-systemd-user",
+			Name:         "systemd usuário (falhas)",
+			Description:  "Unidades --user falhando",
+			Path:         "",
+			Category:     string(CategoryMonitoring),
+			RequiresSudo: false,
+			Native:       "systemd-user",
 		},
 	}
 }

@@ -1,4 +1,3 @@
-// Package sysurl opens links and copies text using OS tools (xdg-open, wl-copy, etc.).
 package sysurl
 
 import (

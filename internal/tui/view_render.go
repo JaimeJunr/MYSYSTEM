@@ -9,7 +9,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/JaimeJunr/Homestead/internal/domain/entities"
-	"github.com/JaimeJunr/Homestead/internal/domain/types"
 	"github.com/JaimeJunr/Homestead/internal/tui/cmds"
 	"github.com/JaimeJunr/Homestead/internal/tui/items"
 	btmsg "github.com/JaimeJunr/Homestead/internal/tui/msg"
@@ -22,70 +21,76 @@ func (m Model) View() string {
 		return "Iniciando..."
 	}
 
+	var body string
 	switch m.state {
 	case ViewMainMenu:
-		return m.mainMenu.View()
+		body = m.mainMenu.View() + "\n" + theme.Help.Render("?: ajuda contextual · q: sair")
 
 	case ViewScriptList:
-		helpLine := "\n↑/↓: navegar • enter: executar • esc: voltar • q: sair"
-		if m.scriptListAsInstaller {
-			helpLine = "\n↑/↓: navegar • enter: instalar • esc: voltar • q: sair"
-		}
+		helpLine := "\n↑/↓: navegar • /: buscar • f: favorito • esc: voltar (ou limpar busca) • enter: executar • d: simular (dry-run) • ?: ajuda • q: sair"
 		help := theme.Help.Render(helpLine)
 		var feedback string
 		if m.err != nil {
 			feedback = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("9")).
+				Foreground(lipgloss.Color(theme.ErrFg())).
 				Render("\n⚠ "+m.err.Error()) + "\n"
 		}
-		return m.scriptList.View() + feedback + help
+		body = m.scriptList.View() + feedback + help
 
 	case ViewInstallerCategories:
-		help := theme.Help.Render("\n↑/↓: navegar • enter: abrir • esc: voltar • q: sair")
-		return m.installerList.View() + help
+		body = m.installerList.View() + theme.Help.Render("\n↑/↓: navegar • enter: abrir • esc: voltar • ?: ajuda • q: sair")
 
 	case ViewPackageList:
-		help := theme.Help.Render("\n↑/↓: navegar • enter: confirmação • o: abrir URL • c: copiar URL • esc: voltar • q: sair")
+		help := theme.Help.Render("\n↑/↓: navegar • /: buscar • enter: confirmação • o: abrir URL • c: copiar URL • esc: voltar (ou limpar busca) • ?: ajuda • q: sair")
 		toast := ""
 		if strings.TrimSpace(m.keyboardToast) != "" {
 			toast = "\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(m.keyboardToast) + "\n"
 		}
-		return m.packageList.View() + toast + help
+		body = m.packageList.View() + toast + help
 
 	case ViewConfirmation:
-		return m.renderConfirmation()
+		body = m.renderConfirmation()
 
 	case ViewInstalling:
-		return m.renderInstallProgress()
+		body = m.renderInstallProgress()
 
 	case ViewZshWizard:
 		if m.zshWizard != nil {
-			return m.zshWizard.View()
+			body = m.zshWizard.View()
+		} else {
+			body = "Iniciando wizard..."
 		}
-		return "Iniciando wizard..."
 
 	case ViewZshApplying:
-		return m.renderZshApplyFeedback()
+		body = m.renderZshApplyFeedback()
 
 	case ViewZshRepoWizard:
 		if m.zshRepoWizard != nil {
-			body := m.zshRepoWizard.View()
+			body = m.zshRepoWizard.View()
 			if strings.TrimSpace(m.keyboardToast) != "" {
 				body += "\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(m.keyboardToast) + "\n"
 			}
-			return body
+		} else {
+			body = "Iniciando Configurar Zsh..."
 		}
-		return "Iniciando Configurar Zsh..."
 
 	case ViewScriptOutput:
-		return m.renderScriptOutput()
+		body = m.renderScriptOutput()
 
 	case ViewNativeMonitor:
-		return m.renderNativeMonitorView()
+		body = m.renderNativeMonitorView()
+
+	case ViewSettings:
+		if m.settingsModel != nil {
+			body = m.settingsModel.View()
+		} else {
+			body = ""
+		}
 
 	default:
-		return ""
+		body = ""
 	}
+	return m.maybeWrapHelp(body)
 }
 
 func (m Model) renderConfirmation() string {
@@ -96,19 +101,14 @@ func (m Model) renderConfirmation() string {
 		if item.NativeMonitor != "" {
 			title = "Abrir monitor?"
 			description = fmt.Sprintf("Você deseja abrir:\n\n  %s\n  %s", item.Name, item.Description)
-		} else if m.scriptListAsInstaller && item.Category == types.CategoryUtilities {
-			title = "Instalar utilitário?"
-			description = fmt.Sprintf("%s\n\n%s", item.Name, item.Description)
-			if item.RequiresSudo {
-				description += "\n\n⚠️  Pode ser pedida senha de administrador (sudo)."
-			} else {
-				description += "\n\nSem sudo: altera só arquivos do seu usuário."
-			}
 		} else {
 			title = "Executar script?"
 			description = fmt.Sprintf("Você deseja executar:\n\n  %s\n  %s", item.Name, item.Description)
 			if item.RequiresSudo {
 				description += "\n\n⚠️  Este script requer permissões de administrador (sudo)"
+			}
+			if item.SupportsDryRun {
+				description += "\n\nNa lista de scripts, tecla d: simulação (dry-run) antes de executar."
 			}
 		}
 	case entities.Package:
@@ -118,7 +118,14 @@ func (m Model) renderConfirmation() string {
 		if kb := sysurl.PackageKeyboardURL(item); kb != "" {
 			description += "\n\n🔗 Verificação (sem mouse: tecla o abre no navegador, c copia a URL):\n  " + kb
 		}
-		if item.DownloadURL != "" {
+		if strings.TrimSpace(item.UtilityScriptPath) != "" {
+			description += "\n\n⚠️  Será executado o script Homestead deste utilitário (mesmo fluxo que os outros instaladores)."
+			if item.RequiresSudo {
+				description += "\nPode ser pedida senha de administrador (sudo)."
+			} else {
+				description += "\nSem sudo no wrapper; o script pode alterar só o seu utilizador."
+			}
+		} else if item.DownloadURL != "" {
 			description += "\n\n⚠️  Será feito download do arquivo e em seguida os comandos de instalação."
 		} else {
 			description += "\n\n⚠️  Comandos serão executados no terminal; pode ser pedida senha de administrador (sudo)."
@@ -139,9 +146,12 @@ func (m Model) renderConfirmation() string {
 		noButton = theme.Selected.Render(" Não ")
 	}
 
-	helpConfirm := "←/→: escolher • enter: confirmar • esc: voltar"
+	helpConfirm := "←/→: escolher • enter: confirmar • esc: voltar • ?: ajuda"
 	if p, ok := m.selectedItem.(entities.Package); ok && sysurl.PackageKeyboardURL(p) != "" {
 		helpConfirm = "o: abrir URL • c: copiar URL • " + helpConfirm
+	}
+	if s, ok := m.selectedItem.(entities.Script); ok && s.SupportsDryRun && s.NativeMonitor == "" {
+		helpConfirm = "d na lista: dry-run • " + helpConfirm
 	}
 	toastLine := ""
 	if strings.TrimSpace(m.keyboardToast) != "" {
@@ -162,7 +172,7 @@ func (m Model) renderConfirmation() string {
 	}
 	boxStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("63")).
+		BorderForeground(lipgloss.Color(theme.BorderColor())).
 		Padding(1, 2).
 		Width(boxW)
 	box := boxStyle.Render(content)
@@ -199,11 +209,7 @@ func (m Model) renderInstallProgress() string {
 	}
 
 	icon := statusIcons[m.installStatus]
-	if icon == "" {
-		icon = m.spinner.View()
-	}
-
-	status := fmt.Sprintf("%s %s", icon, m.installMessage)
+	status := fmt.Sprintf("%s %s", m.installStatusGlyph(icon), m.installMessage)
 	progressBar := m.progress.ViewAs(m.installPercent)
 
 	content := title + "\n\n" +
@@ -211,13 +217,13 @@ func (m Model) renderInstallProgress() string {
 		progressBar + "\n\n"
 
 	if m.canAbort && !m.aborted {
-		content += theme.Help.Render("⚠️  Pressione Ctrl+C para abortar (não recomendado)")
+		content += theme.Help.Render("⚠️  Pressione Ctrl+C para abortar (não recomendado) • ?: ajuda")
 	} else if m.installStatus == "complete" {
 		content += theme.Help.Render("Instalação concluída! Retornando ao menu...")
 	} else if m.installStatus == "failed" {
 		content += theme.Help.Render("❌ Instalação falhou. Retornando ao menu...")
 	} else {
-		content += theme.Help.Render("Aguarde... não feche o programa")
+		content += theme.Help.Render("Aguarde... não feche o programa • ?: ajuda")
 	}
 
 	box := theme.ConfirmBox.Render(content)
@@ -248,7 +254,7 @@ func scriptOutputViewportWH(termW, termH int) (w, h int) {
 	if w < 28 {
 		w = 28
 	}
-	h = termH - 20
+	h = termH - 20 - 2*theme.TextScaleLevel()
 	if h < 8 {
 		h = 8
 	}
@@ -279,7 +285,7 @@ func scriptOutputDivider(width int) string {
 	if n < 12 {
 		n = 12
 	}
-	return lipgloss.NewStyle().Foreground(lipgloss.Color("63")).Render(strings.Repeat("─", n))
+	return lipgloss.NewStyle().Foreground(lipgloss.Color(theme.BorderColor())).Render(strings.Repeat("─", n))
 }
 
 func (m Model) renderScriptOutput() string {
@@ -290,29 +296,21 @@ func (m Model) renderScriptOutput() string {
 		wait := "Capturando saída…"
 		note := "A saída aparecerá no painel abaixo quando o script terminar."
 		sudoNote := "Scripts com sudo usam o terminal completo para pedir senha."
-		if m.scriptListAsInstaller {
-			accent = "⚙️ Instalando"
-			wait = "A aguardar conclusão…"
-			note = "O registo aparece abaixo quando terminar."
-			sudoNote = "Com sudo, a senha pode ser pedida em outra tela."
-		}
 		head := theme.Title.Render("Homestead") + "\n" +
 			theme.Help.Render("Gerenciador de Sistema") + "\n" +
 			scriptOutputDivider(boxW) + "\n" +
 			theme.ScriptScreenAccent.Render(accent) + "\n" +
 			lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("230")).Render(m.scriptOutputTitle)
-		body := "\n\n" + fmt.Sprintf("%s %s", m.spinner.View(), theme.Help.Render(wait))
+		body := "\n\n" + fmt.Sprintf("%s %s", m.waitGlyph(), theme.Help.Render(wait))
 		body += "\n\n" + theme.Help.Render(note)
 		body += "\n" + theme.Help.Render(sudoNote)
+		body += "\n" + theme.Help.Render("?: ajuda")
 		content := head + body
 		box := theme.ScriptScreenOuter.Width(boxW)
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box.Render(content))
 	}
 
 	doneAccent := "📜 Saída do script"
-	if m.scriptListAsInstaller {
-		doneAccent = "📜 Registo da instalação"
-	}
 	head := theme.Title.Render("Homestead") + "\n" +
 		theme.Help.Render("Gerenciador de Sistema") + "\n" +
 		scriptOutputDivider(boxW) + "\n" +
@@ -322,7 +320,7 @@ func (m Model) renderScriptOutput() string {
 		nameLine += "  " + lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true).Render("· falhou")
 	}
 	view := m.scriptOutputView.View()
-	footerText := "↑/↓  PgUp/PgDn  rolar · Enter / Esc / q  voltar"
+	footerText := "↑/↓  PgUp/PgDn  rolar · Enter / Esc / q  voltar · ?: ajuda"
 	if m.scriptOutputErr != nil {
 		footerText = "Ver mensagem de erro no fim do texto · " + footerText
 	}
@@ -337,8 +335,8 @@ func (m Model) renderZshApplyFeedback() string {
 
 	switch m.zshApplyPhase {
 	case "applying":
-		status := fmt.Sprintf("%s Aplicando configuração Zsh...", m.spinner.View())
-		content := title + "\n\n" + status + "\n\n" + theme.Help.Render("Aguarde...")
+		status := fmt.Sprintf("%s Aplicando configuração Zsh...", m.waitGlyph())
+		content := title + "\n\n" + status + "\n\n" + theme.Help.Render("Aguarde... • ?: ajuda")
 		box := theme.ConfirmBox.Render(content)
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)
 	case "success":
@@ -349,7 +347,7 @@ func (m Model) renderZshApplyFeedback() string {
 			"Verifique: cat ~/.zshrc\n\n" +
 			"Não instala plugins externos (ex.: zsh-autosuggestions); apenas escreve o .zshrc.\n" +
 			"Use Instaladores para Zsh/Oh My Zsh se ainda não estiverem instalados.\n\n" +
-			theme.Help.Render("Retornando ao menu em 2s (ou Enter/Esc para voltar)")
+			theme.Help.Render("Retornando ao menu em 2s (ou Enter/Esc para voltar) • ?: ajuda")
 		box := theme.ConfirmBox.Render(content)
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)
 	case "error":
@@ -359,11 +357,11 @@ func (m Model) renderZshApplyFeedback() string {
 		}
 		content := title + "\n\n" +
 			"❌ Erro ao aplicar configuração:\n\n" + errMsg + "\n\n" +
-			theme.Help.Render("Pressione Enter ou Esc para voltar ao menu")
+			theme.Help.Render("Pressione Enter ou Esc para voltar ao menu • ?: ajuda")
 		box := theme.ConfirmBox.Render(content)
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)
 	default:
-		content := title + "\n\n" + m.spinner.View() + " Aguarde..."
+		content := title + "\n\n" + m.waitGlyph() + " Aguarde..."
 		box := theme.ConfirmBox.Render(content)
 		return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, box)
 	}

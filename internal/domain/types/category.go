@@ -6,6 +6,7 @@ type Category string
 const (
 	CategoryCleanup    Category = "cleanup"
 	CategoryMonitoring Category = "monitoring"
+	CategoryCheckup    Category = "checkup"
 	CategoryInstall    Category = "install"
 	CategoryUtilities  Category = "utilities"
 )
@@ -18,7 +19,7 @@ func (c Category) String() string {
 // IsValid checks if the category is valid
 func (c Category) IsValid() bool {
 	switch c {
-	case CategoryCleanup, CategoryMonitoring, CategoryInstall, CategoryUtilities:
+	case CategoryCleanup, CategoryMonitoring, CategoryCheckup, CategoryInstall, CategoryUtilities:
 		return true
 	default:
 		return false

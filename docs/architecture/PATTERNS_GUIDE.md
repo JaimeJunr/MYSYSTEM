@@ -2,6 +2,8 @@
 
 Exemplos práticos de como implementar cada padrão de projeto no Homestead.
 
+Para **onde cada padrão encaixa na pilha** (TUI → serviços → domínio → infra), veja primeiro [VERTICAL_PATTERNS.md](VERTICAL_PATTERNS.md).
+
 ## 📋 Índice
 
 - [Repository Pattern](#repository-pattern)

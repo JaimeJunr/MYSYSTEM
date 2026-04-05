@@ -68,7 +68,7 @@ func (s *ScriptService) ExecuteScript(id string) error {
 	}
 
 	// Execute
-	if err := s.executor.Execute(script); err != nil {
+	if err := s.executor.Execute(script, interfaces.ScriptExecOpts{}); err != nil {
 		return fmt.Errorf("execute script %s: %w", id, err)
 	}
 
@@ -76,7 +76,7 @@ func (s *ScriptService) ExecuteScript(id string) error {
 }
 
 // ExecuteScriptCapture runs the script and returns combined stdout/stderr (for in-app TUI).
-func (s *ScriptService) ExecuteScriptCapture(id string) (output string, err error) {
+func (s *ScriptService) ExecuteScriptCapture(id string, opts interfaces.ScriptExecOpts) (output string, err error) {
 	if id == "" {
 		return "", fmt.Errorf("execute script: %w", types.ErrInvalidInput)
 	}
@@ -86,7 +86,7 @@ func (s *ScriptService) ExecuteScriptCapture(id string) (output string, err erro
 		return "", fmt.Errorf("execute script %s: %w", id, err)
 	}
 
-	out, err := s.executor.ExecuteCapture(script)
+	out, err := s.executor.ExecuteCapture(script, opts)
 	if err != nil {
 		return out, fmt.Errorf("execute script %s: %w", id, err)
 	}
@@ -94,7 +94,7 @@ func (s *ScriptService) ExecuteScriptCapture(id string) (output string, err erro
 }
 
 // ScriptInteractiveCommand builds an exec.Cmd for tea.ExecProcess (sudo / TTY).
-func (s *ScriptService) ScriptInteractiveCommand(id string) (*exec.Cmd, error) {
+func (s *ScriptService) ScriptInteractiveCommand(id string, opts interfaces.ScriptExecOpts) (*exec.Cmd, error) {
 	if id == "" {
 		return nil, fmt.Errorf("execute script: %w", types.ErrInvalidInput)
 	}
@@ -104,7 +104,7 @@ func (s *ScriptService) ScriptInteractiveCommand(id string) (*exec.Cmd, error) {
 		return nil, fmt.Errorf("execute script %s: %w", id, err)
 	}
 
-	cmd, err := s.executor.InteractiveCommand(script)
+	cmd, err := s.executor.InteractiveCommand(script, opts)
 	if err != nil {
 		return nil, fmt.Errorf("execute script %s: %w", id, err)
 	}
@@ -124,4 +124,8 @@ func (s *ScriptService) CanExecuteScript(id string) bool {
 // ScriptExists checks if a script exists
 func (s *ScriptService) ScriptExists(id string) bool {
 	return s.repo.Exists(id)
+}
+
+func (s *ScriptService) ConfigureScriptRoot(dir string) error {
+	return s.executor.SetScriptRoot(dir)
 }

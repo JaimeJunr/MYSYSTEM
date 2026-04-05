@@ -13,10 +13,27 @@ import (
 	"github.com/JaimeJunr/Homestead/internal/tui/theme"
 )
 
+func (m Model) withClearedNativeMonitors() Model {
+	m.nativeBattery, m.nativeMemory = nil, nil
+	m.nativeBatteryErr, m.nativeMemoryErr = nil, nil
+	m.nativeDisk, m.nativeDiskErr = nil, nil
+	m.nativeLoad, m.nativeLoadErr = nil, nil
+	m.nativeNetwork, m.nativeNetworkErr = nil, nil
+	m.nativeNetworkAt = time.Time{}
+	m.nativeNetRates = nil
+	m.nativeThermal, m.nativeThermalErr = nil, nil
+	m.nativeSystemdUser, m.nativeSystemdErr = nil, nil
+	return m
+}
+
 const nativeMonitorRefreshInterval = 3 * time.Second
 
-func nativeMonitorScheduleTick() tea.Cmd {
-	return tea.Tick(nativeMonitorRefreshInterval, func(time.Time) tea.Msg {
+func (m Model) nativeMonitorScheduleTick() tea.Cmd {
+	d := nativeMonitorRefreshInterval
+	if m.prefs.ReduceMotion {
+		d = 10 * time.Second
+	}
+	return tea.Tick(d, func(time.Time) tea.Msg {
 		return btmsg.NativeMonitorTick{}
 	})
 }
@@ -30,6 +47,16 @@ func (m Model) nativeMonitorLoadCmd() tea.Cmd {
 			out.Battery, out.Err = monitoring.ReadBattery()
 		case entities.NativeMonitorMemory:
 			out.Memory, out.Err = monitoring.ReadMemory()
+		case entities.NativeMonitorDisk:
+			out.Disk, out.Err = monitoring.ReadDiskMounts()
+		case entities.NativeMonitorLoad:
+			out.Load, out.Err = monitoring.ReadLoadAvg()
+		case entities.NativeMonitorNetwork:
+			out.Network, out.Err = monitoring.ReadNetwork()
+		case entities.NativeMonitorThermal:
+			out.Thermal, out.Err = monitoring.ReadThermal()
+		case entities.NativeMonitorSystemdUser:
+			out.SystemdUser, out.Err = monitoring.ReadSystemdUserFailed()
 		default:
 			out.Err = fmt.Errorf("monitor desconhecido: %q", kind)
 		}
@@ -49,12 +76,26 @@ func (m Model) renderNativeMonitorView() string {
 		body = renderNativeBatteryPanel(m)
 	case entities.NativeMonitorMemory:
 		body = renderNativeMemoryPanel(m)
+	case entities.NativeMonitorDisk:
+		body = renderNativeDiskPanel(m)
+	case entities.NativeMonitorLoad:
+		body = renderNativeLoadPanel(m)
+	case entities.NativeMonitorNetwork:
+		body = renderNativeNetworkPanel(m)
+	case entities.NativeMonitorThermal:
+		body = renderNativeThermalPanel(m)
+	case entities.NativeMonitorSystemdUser:
+		body = renderNativeSystemdUserPanel(m)
 	default:
 		body = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render("Monitor inválido.")
 	}
 
+	sec := 3
+	if m.prefs.ReduceMotion {
+		sec = 10
+	}
 	footer := theme.ScriptScreenFooterBar.Width(max(12, boxW-8)).Render(
-		"r: atualizar agora · Enter / Esc / q: voltar · atualiza a cada 3s",
+		fmt.Sprintf("r: atualizar agora · Enter / Esc / q: voltar · ? ajuda · atualiza a cada %ds", sec),
 	)
 	content := head + body + "\n" + footer
 	box := theme.ScriptScreenOuter.Width(boxW)
@@ -246,5 +287,169 @@ func renderNativeMemoryPanel(m Model) string {
 	sb.WriteString("\n")
 	sb.WriteString(theme.Help.Render("* “Usado” é uma estimativa."))
 
+	return sb.String()
+}
+
+func humanBytesIEC(n uint64) string {
+	f := float64(n)
+	switch {
+	case n >= 1<<40:
+		return fmt.Sprintf("%.2f TiB", f/(1<<40))
+	case n >= 1<<30:
+		return fmt.Sprintf("%.2f GiB", f/(1<<30))
+	case n >= 1<<20:
+		return fmt.Sprintf("%.1f MiB", f/(1<<20))
+	case n >= 1<<10:
+		return fmt.Sprintf("%.1f KiB", f/(1<<10))
+	default:
+		return fmt.Sprintf("%d B", n)
+	}
+}
+
+func humanBps(bps float64) string {
+	if bps < 1024 {
+		return fmt.Sprintf("%.0f B/s", bps)
+	}
+	if bps < 1024*1024 {
+		return fmt.Sprintf("%.1f KiB/s", bps/1024)
+	}
+	return fmt.Sprintf("%.2f MiB/s", bps/(1024*1024))
+}
+
+func renderNativeDiskPanel(m Model) string {
+	title := theme.ScriptScreenAccent.Render("💾 Espaço em disco (por mount)")
+	if m.nativeDiskErr != nil {
+		return title + "\n\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(m.nativeDiskErr.Error())
+	}
+	if len(m.nativeDisk) == 0 {
+		return title + "\n\n" + theme.Help.Render("Carregando…")
+	}
+	var sb strings.Builder
+	sb.WriteString(title)
+	sb.WriteString("\n\n")
+	kv := func(k, v string) {
+		sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Width(12).Render(k))
+		sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(v))
+		sb.WriteString("\n")
+	}
+	for _, d := range m.nativeDisk {
+		sb.WriteString(theme.ScriptScreenAccent.Render(d.Mountpoint) + theme.Help.Render("  ("+d.Fstype+")") + "\n")
+		kv("Total", humanBytesIEC(d.TotalBytes))
+		kv("Usado", humanBytesIEC(d.UsedBytes))
+		kv("Livre", humanBytesIEC(d.AvailBytes))
+		kv("Uso", fmt.Sprintf("%.1f %%", d.UsePercent))
+		sb.WriteString("\n")
+	}
+	sb.WriteString(theme.Help.Render("/proc/mounts + statfs"))
+	return sb.String()
+}
+
+func renderNativeLoadPanel(m Model) string {
+	title := theme.ScriptScreenAccent.Render("⚙ Carga da CPU (load average)")
+	if m.nativeLoadErr != nil {
+		return title + "\n\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(m.nativeLoadErr.Error())
+	}
+	s := m.nativeLoad
+	if s == nil {
+		return title + "\n\n" + theme.Help.Render("Carregando…")
+	}
+	var sb strings.Builder
+	sb.WriteString(title)
+	sb.WriteString("\n\n")
+	kv := func(k, v string) {
+		sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Width(14).Render(k))
+		sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(v))
+		sb.WriteString("\n")
+	}
+	kv("1 min", fmt.Sprintf("%.2f", s.Load1))
+	kv("5 min", fmt.Sprintf("%.2f", s.Load5))
+	kv("15 min", fmt.Sprintf("%.2f", s.Load15))
+	kv("CPUs (Go)", fmt.Sprintf("%d", s.CPUs))
+	if s.CPUs > 0 {
+		kv("Load / CPU", fmt.Sprintf("%.2f (1 min)", s.Load1/float64(s.CPUs)))
+	}
+	kv("Processos", s.Procs)
+	sb.WriteString("\n")
+	sb.WriteString(theme.Help.Render("Load próximo ao nº de CPUs costuma indicar saturação."))
+	return sb.String()
+}
+
+func renderNativeNetworkPanel(m Model) string {
+	title := theme.ScriptScreenAccent.Render("🌐 Rede (contadores /proc)")
+	if m.nativeNetworkErr != nil {
+		return title + "\n\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(m.nativeNetworkErr.Error())
+	}
+	s := m.nativeNetwork
+	if s == nil {
+		return title + "\n\n" + theme.Help.Render("Carregando…")
+	}
+	var sb strings.Builder
+	sb.WriteString(title)
+	sb.WriteString("\n\n")
+	kv := func(k, v string) {
+		sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Width(10).Render(k))
+		sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(v))
+		sb.WriteString("\n")
+	}
+	for _, iface := range s.Ifaces {
+		sb.WriteString(theme.ScriptScreenAccent.Render(iface.Name) + "\n")
+		kv("RX", humanBytesIEC(iface.RxBytes))
+		kv("TX", humanBytesIEC(iface.TxBytes))
+		if r, ok := m.nativeNetRates[iface.Name]; ok {
+			kv("Δ RX", humanBps(r.RxBps))
+			kv("Δ TX", humanBps(r.TxBps))
+		}
+		sb.WriteString("\n")
+	}
+	sb.WriteString(theme.Help.Render("Δ = entre atualizações (~3s); contadores desde o boot."))
+	return sb.String()
+}
+
+func renderNativeThermalPanel(m Model) string {
+	title := theme.ScriptScreenAccent.Render("🌡 Temperatura (sysfs)")
+	if m.nativeThermalErr != nil {
+		return title + "\n\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(m.nativeThermalErr.Error())
+	}
+	s := m.nativeThermal
+	if s == nil {
+		return title + "\n\n" + theme.Help.Render("Carregando…")
+	}
+	if len(s.Readings) == 0 {
+		return title + "\n\n" + theme.Help.Render("Nenhum sensor em /sys/class/thermal ou hwmon.")
+	}
+	var sb strings.Builder
+	sb.WriteString(title)
+	sb.WriteString("\n\n")
+	for _, r := range s.Readings {
+		line := lipgloss.NewStyle().Foreground(lipgloss.Color("245")).Width(28).Render(r.Label)
+		line += lipgloss.NewStyle().Foreground(lipgloss.Color("252")).Render(fmt.Sprintf("%.1f °C", r.TempC))
+		sb.WriteString(line + "\n")
+	}
+	sb.WriteString("\n")
+	sb.WriteString(theme.Help.Render("thermal_zone*, hwmon"))
+	return sb.String()
+}
+
+func renderNativeSystemdUserPanel(m Model) string {
+	title := theme.ScriptScreenAccent.Render("📋 systemd --user (falhando)")
+	if m.nativeSystemdErr != nil {
+		return title + "\n\n" + lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render(m.nativeSystemdErr.Error())
+	}
+	s := m.nativeSystemdUser
+	if s == nil {
+		return title + "\n\n" + theme.Help.Render("Carregando…")
+	}
+	var sb strings.Builder
+	sb.WriteString(title)
+	sb.WriteString("\n\n")
+	if len(s.Units) == 0 {
+		sb.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("10")).Render("Nenhuma unidade falhou.") + "\n")
+	} else {
+		for _, u := range s.Units {
+			sb.WriteString(theme.ScriptScreenAccent.Render(u.Unit) + "\n")
+			sb.WriteString(theme.Help.Render(u.Sub+" · "+u.Description) + "\n\n")
+		}
+	}
+	sb.WriteString(theme.Help.Render("systemctl --user list-units --state=failed"))
 	return sb.String()
 }
