@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -26,5 +27,24 @@ func TestSmoke_VersionFlag(t *testing.T) {
 	}
 	if strings.TrimSpace(string(out)) == "" {
 		t.Fatal("expected non-empty version output")
+	}
+
+	runExport := exec.Command(bin, "export-profile", "-format", "json")
+	runExport.Env = append(os.Environ(), "XDG_CONFIG_HOME="+t.TempDir())
+	outEx, err := runExport.CombinedOutput()
+	if err != nil {
+		t.Fatalf("homestead export-profile: %v\n%s", err, outEx)
+	}
+	if !strings.Contains(string(outEx), `"version"`) {
+		t.Fatalf("expected JSON export, got: %s", outEx)
+	}
+
+	runFish := exec.Command(bin, "shell-init", "fish")
+	outFish, err := runFish.CombinedOutput()
+	if err != nil {
+		t.Fatalf("homestead shell-init fish: %v\n%s", err, outFish)
+	}
+	if !strings.Contains(string(outFish), "HOMESTEAD_CONFIG_DIR") {
+		t.Fatalf("expected HOMESTEAD_CONFIG_DIR in fish snippet: %s", outFish)
 	}
 }

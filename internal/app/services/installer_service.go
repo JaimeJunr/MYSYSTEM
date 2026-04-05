@@ -25,6 +25,17 @@ func NewInstallerService(
 	}
 }
 
+// ConfigureHomesteadRoot propagates ScriptRoot to the installer when supported.
+func (s *InstallerService) ConfigureHomesteadRoot(dir string) error {
+	type homesteadRootSetter interface {
+		SetHomesteadRoot(dir string) error
+	}
+	if hs, ok := s.installer.(homesteadRootSetter); ok {
+		return hs.SetHomesteadRoot(dir)
+	}
+	return nil
+}
+
 // GetAllPackages returns all available packages
 func (s *InstallerService) GetAllPackages() ([]entities.Package, error) {
 	packages, err := s.repo.FindAll()
@@ -87,23 +98,19 @@ func (s *InstallerService) GetPackageByID(id string) (*entities.Package, error) 
 
 // InstallPackage installs a package with progress reporting
 func (s *InstallerService) InstallPackage(id string, progressCallback interfaces.ProgressCallback) error {
-	// Get package
 	pkg, err := s.repo.FindByID(id)
 	if err != nil {
 		return fmt.Errorf("install package %s: %w", id, err)
 	}
 
-	// Validate package
 	if err := pkg.Validate(); err != nil {
 		return fmt.Errorf("install package %s: invalid package: %w", id, err)
 	}
 
-	// Check if can install
 	if !s.installer.CanInstall(pkg) {
 		return fmt.Errorf("install package %s: system cannot install this package", id)
 	}
 
-	// Install with progress
 	if err := s.installer.Install(pkg, progressCallback); err != nil {
 		return fmt.Errorf("install package %s: %w", id, err)
 	}

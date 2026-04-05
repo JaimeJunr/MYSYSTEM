@@ -5,10 +5,26 @@ import (
 )
 
 const (
-	NativeMonitorNone    = ""
-	NativeMonitorBattery = "battery"
-	NativeMonitorMemory  = "memory"
+	NativeMonitorNone         = ""
+	NativeMonitorBattery      = "battery"
+	NativeMonitorMemory       = "memory"
+	NativeMonitorDisk         = "disk"
+	NativeMonitorLoad         = "load"
+	NativeMonitorNetwork      = "network"
+	NativeMonitorThermal      = "thermal"
+	NativeMonitorSystemdUser  = "systemd-user"
 )
+
+func ValidNativeMonitor(k string) bool {
+	switch k {
+	case NativeMonitorBattery, NativeMonitorMemory, NativeMonitorDisk,
+		NativeMonitorLoad, NativeMonitorNetwork, NativeMonitorThermal,
+		NativeMonitorSystemdUser:
+		return true
+	default:
+		return false
+	}
+}
 
 // Script represents a system maintenance script
 type Script struct {
@@ -18,7 +34,8 @@ type Script struct {
 	Path         string
 	Category     types.Category
 	RequiresSudo bool
-	// NativeMonitor: painel integrado no TUI ("battery" / "memory"); Path pode ficar vazio.
+	SupportsDryRun bool
+	// If set, TUI shows a native panel and Path is ignored.
 	NativeMonitor string
 }
 
@@ -34,7 +51,7 @@ func (s *Script) Validate() error {
 		return types.ErrInvalidInput
 	}
 	if s.NativeMonitor != "" {
-		if s.NativeMonitor != NativeMonitorBattery && s.NativeMonitor != NativeMonitorMemory {
+		if !ValidNativeMonitor(s.NativeMonitor) {
 			return types.ErrInvalidInput
 		}
 		return nil

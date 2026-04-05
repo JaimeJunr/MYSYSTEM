@@ -30,12 +30,20 @@ func IsSchemaSupported(v int) bool {
 // DefaultCatalogURL is the raw GitHub URL for the versioned manifest on main.
 const DefaultCatalogURL = "https://raw.githubusercontent.com/JaimeJunr/Homestead/main/internal/infrastructure/catalog/installer-catalog.json"
 
-// ResolveCatalogURL returns HOMESTEAD_CATALOG_URL when set, otherwise DefaultCatalogURL.
-func ResolveCatalogURL() string {
+// EffectiveCatalogURL prefers HOMESTEAD_CATALOG_URL, then fileOverride, then DefaultCatalogURL.
+func EffectiveCatalogURL(fileOverride string) string {
 	if u := strings.TrimSpace(os.Getenv("HOMESTEAD_CATALOG_URL")); u != "" {
 		return u
 	}
+	if u := strings.TrimSpace(fileOverride); u != "" {
+		return u
+	}
 	return DefaultCatalogURL
+}
+
+// ResolveCatalogURL returns HOMESTEAD_CATALOG_URL when set, otherwise DefaultCatalogURL.
+func ResolveCatalogURL() string {
+	return EffectiveCatalogURL("")
 }
 
 // CacheFilePath returns the path for the on-disk catalog cache.

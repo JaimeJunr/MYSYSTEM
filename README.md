@@ -9,11 +9,25 @@ Homestead brings together system cleanup scripts, dev tool installers, and shell
 ## Features
 
 - **System Cleanup** — Run maintenance scripts for Docker, npm, apt caches, and large file detection
-- **System Monitoring** — Check battery health and memory usage at a glance
-- **Package Installers** — Install IDEs (Cursor, Claude Code CLI) and dev tools from a curated list
+- **System Monitoring** — Native in-TUI panels (Go, ~3s refresh): battery, RAM/swap, disk usage per mount, CPU load average, network RX/TX and per-interval throughput, thermal sensors (sysfs), and failing **systemd --user** units
+- **Package Installers** — Install IDEs (Cursor, Claude Code CLI) and dev tools from a curated list (embedded catalog + optional remote manifest; see below)
 - **Plugins e temas Zsh** — Wizard local para escolher plugins, ferramentas e gerar `.zshrc` (requer Oh My Zsh instalado)
 - **Configurar Zsh** — Repositório de config (dotfiles): criar novo repo e enviar para a nuvem ou restaurar a partir de um repo existente; ideal para migração entre máquinas
 - **Beautiful TUI** — Keyboard-driven interface built with Bubbletea and Lipgloss
+
+### Preferences, theme, and installer catalog
+
+On startup, `main` loads **`~/.config/homestead/preferences.yaml`** (see `internal/infrastructure/preferences`). You can change the same options from the TUI under **⚙️ Configurações**:
+
+| Area | What it does |
+|------|----------------|
+| **Catalog URL** | HTTPS URL of the installer JSON manifest. Empty means the [default raw GitHub URL](https://raw.githubusercontent.com/JaimeJunr/Homestead/main/internal/infrastructure/catalog/installer-catalog.json) baked into `catalog.EffectiveCatalogURL`. If **`HOMESTEAD_CATALOG_URL`** is set in the environment, it overrides both the file and the default until you unset it. |
+| **Theme** | Toggles **light** vs **dark** Lipgloss palettes (`internal/tui/theme/variants.go`); applied when the TUI starts and again after you save settings. |
+| **Script root** | Directory that must contain a `scripts/` folder (bash assets). Empty uses the current working directory (see `preferences.ValidateScriptRoot`). |
+| **Dotfiles repo** | Default path used by **Configurar Zsh** when no custom repo is set. |
+| **Confirmations** | Optional prompts before running scripts or installing packages. |
+
+The binary merges the **on-disk cache** of the catalog at startup (`main.go`), then the TUI **fetches** the effective URL in the background (`tui.Init` → `cmds.FetchCatalog`) and merges packages when the request succeeds.
 
 ---
 
@@ -73,8 +87,8 @@ homestead/
 │   └── tui/                  # Bubbletea models and views
 ├── scripts/
 │   ├── cleanup/              # System maintenance scripts
-│   └── monitoring/           # Battery and memory monitoring
-└── docs/                     # Architecture, patterns, ADRs
+│   └── monitoring/           # Optional bash helpers (native monitors are Go under internal/monitoring/)
+└── docs/                     # INDEX.md, product context, architecture, ADRs
 ```
 
 The codebase follows [Clean Architecture](docs/architecture/ARCHITECTURE.md) — domain logic has zero external dependencies, infrastructure is pluggable, and the TUI layer only talks to services.
@@ -143,7 +157,7 @@ The project is structured in 4 layers, strictly following Clean Architecture:
 
 Dependencies only flow inward. The TUI never touches the filesystem directly.
 
-See [docs/architecture/](docs/architecture/) for diagrams, ADRs, and pattern examples.
+Documentation map: [docs/INDEX.md](docs/INDEX.md). For diagrams, ADRs, and patterns, see [docs/architecture/](docs/architecture/).
 
 ---
 

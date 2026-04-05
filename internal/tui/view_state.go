@@ -1,6 +1,5 @@
 package tui
 
-// ViewState represents different views in the TUI
 type ViewState int
 
 const (
@@ -15,15 +14,16 @@ const (
 	ViewZshWizard
 	ViewZshApplying
 	ViewZshRepoWizard
+	ViewSettings
 )
 
-// menuAction identifies the main menu action
 const (
 	menuActionCleanup    = "cleanup"
 	menuActionMonitoring = "monitoring"
+	menuActionCheckup    = "checkup"
 	menuActionInstallers = "installers"
-	menuActionZshPlugins = "zsh_plugins" // Plugins e temas Zsh (wizard local)
-	menuActionZshRepo    = "zsh_repo"    // Configurar Zsh (repo backup/migração)
+	menuActionZshPlugins = "zsh_plugins"
+	menuActionZshRepo    = "zsh_repo"
 	menuActionSettings   = "settings"
 	menuActionQuit       = "quit"
 )

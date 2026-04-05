@@ -13,6 +13,7 @@ const (
 	PackageCategoryAI        PackageCategory = "ai"
 	PackageCategoryGames     PackageCategory = "games"
 	PackageCategorySysAdmin  PackageCategory = "sys_admin"
+	PackageCategoryUtilities PackageCategory = "utilities"
 	PackageCategoryOther     PackageCategory = "other"
 )
 
@@ -28,6 +29,7 @@ func (c PackageCategory) IsValid() bool {
 		PackageCategoryAI,
 		PackageCategoryGames,
 		PackageCategorySysAdmin,
+		PackageCategoryUtilities,
 		PackageCategoryOther:
 		return true
 	default:

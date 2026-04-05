@@ -3,29 +3,13 @@
 # Script de Limpeza Geral (Caches e Sistema)
 # Parte do sistema de limpeza SOLID
 
-# Fallback para execução independente
 REAL_USER=${REAL_USER:-${SUDO_USER:-$USER}}
 REAL_HOME=${REAL_HOME:-$(getent passwd "$REAL_USER" | cut -d: -f6)}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/../lib/homestead_cleanup.sh"
 
 echo "--- Iniciando Limpeza Geral ---"
-
-# Garantir que confirm_action existe (caso executado sem o orquestrador)
-if ! declare -f confirm_action > /dev/null; then
-    confirm_action() {
-        local description="$1"
-        local command_to_run="$2"
-        local size_check_cmd="$3"
-        echo "---------------------------------------------------"
-        echo "$description"
-        [ -n "$size_check_cmd" ] && echo "   Tamanho estimado: $(eval "$size_check_cmd" 2>/dev/null || echo "N/A")"
-        read -p "   Deseja prosseguir? [s/N]: " -n 1 -r
-        echo ""
-        if [[ $REPLY =~ ^[Ss]$ ]]; then
-            eval "$command_to_run"
-            echo "   ✓ Concluído."
-        fi
-    }
-fi
 
 # 1. Lixeira
 if [ -d "$REAL_HOME/.local/share/Trash" ]; then
@@ -94,15 +78,24 @@ if command -v snap &> /dev/null; then
     echo "---------------------------------------------------"
     echo "9. Verificando Snaps desabilitados..."
     DISABLED_SNAPS=$(snap list --all 2>/dev/null | grep disabled | awk '{print $1, $3}' | sort -u -k1,1)
-    
-    if [ -n "$DISABLED_SNAPS" ]; then
+
+    if [[ "${HOMESTEAD_DRY_RUN:-}" == "1" ]]; then
+        if [ -n "$DISABLED_SNAPS" ]; then
+            echo "   [DRY-RUN] Revisões desativadas que seriam removíveis:"
+            echo "$DISABLED_SNAPS"
+            echo "   [DRY-RUN] Comando por linha: sudo snap remove NAME --revision=REV"
+        else
+            echo "   [DRY-RUN] Nenhum snap desabilitado listado."
+        fi
+        echo ""
+    elif [ -n "$DISABLED_SNAPS" ]; then
         echo "   Snaps desabilitados encontrados:"
         echo "$DISABLED_SNAPS"
         echo ""
         read -p "   Deseja remover estes snaps desabilitados? [s/N]: " -n 1 -r
         echo ""
         if [[ $REPLY =~ ^[Ss]$ ]]; then
-            echo "$DISABLED_SNAPS" | while read snap_name revision; do
+            echo "$DISABLED_SNAPS" | while read -r snap_name revision; do
                 echo "   Removendo $snap_name (revisão $revision)..."
                 sudo snap remove "$snap_name" --revision="$revision" 2>/dev/null || true
             done

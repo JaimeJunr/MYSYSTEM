@@ -7,34 +7,62 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/JaimeJunr/Homestead/internal/domain/entities"
 	"github.com/JaimeJunr/Homestead/internal/domain/interfaces"
+	"github.com/JaimeJunr/Homestead/internal/domain/types"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/executor"
 )
 
 // DefaultPackageInstaller is the default implementation of PackageInstaller
 type DefaultPackageInstaller struct {
-	tempDir string
-	ctx     context.Context
-	cancel  context.CancelFunc
+	tempDir    string
+	rootDir    string
+	ctx        context.Context
+	cancel     context.CancelFunc
+	strategies map[types.PackageInstallKind]installStrategy
 }
 
-// NewDefaultPackageInstaller creates a new default package installer
+// NewDefaultPackageInstaller creates a new default package installer (Homestead root = cwd).
 func NewDefaultPackageInstaller() interfaces.PackageInstaller {
+	return NewDefaultPackageInstallerWithRoot("")
+}
+
+// NewDefaultPackageInstallerWithRoot resolves HOMESTEAD_ROOT from scriptRoot like BashExecutor.
+func NewDefaultPackageInstallerWithRoot(scriptRoot string) interfaces.PackageInstaller {
 	ctx, cancel := context.WithCancel(context.Background())
-	return &DefaultPackageInstaller{
-		tempDir: os.TempDir(),
-		ctx:     ctx,
-		cancel:  cancel,
+	rootDir, err := executor.ResolveScriptRoot(scriptRoot)
+	if err != nil || rootDir == "" {
+		rootDir, _ = os.Getwd()
+		if rootDir == "" {
+			rootDir = "."
+		}
 	}
+	return &DefaultPackageInstaller{
+		tempDir:    os.TempDir(),
+		rootDir:    rootDir,
+		ctx:        ctx,
+		cancel:     cancel,
+		strategies: newStrategyMap(defaultStrategies()),
+	}
+}
+
+// SetHomesteadRoot updates HOMESTEAD_ROOT for utility script installs.
+func (i *DefaultPackageInstaller) SetHomesteadRoot(dir string) error {
+	r, err := executor.ResolveScriptRoot(dir)
+	if err != nil {
+		return err
+	}
+	i.rootDir = r
+	return nil
 }
 
 // Install installs a package with progress reporting
 func (i *DefaultPackageInstaller) Install(pkg *entities.Package, progressCallback interfaces.ProgressCallback) error {
-	// Check if already installed
 	installed, err := i.IsInstalled(pkg)
 	if err == nil && installed {
 		progressCallback(interfaces.InstallProgress{
@@ -47,84 +75,12 @@ func (i *DefaultPackageInstaller) Install(pkg *entities.Package, progressCallbac
 		return nil
 	}
 
-	var downloadPath string
-	if pkg.DownloadURL != "" {
-		// Download phase
-		progressCallback(interfaces.InstallProgress{
-			Package:  pkg,
-			Status:   "downloading",
-			Progress: 0,
-			Message:  "Iniciando download...",
-			CanAbort: true,
-		})
-
-		var err error
-		downloadPath, err = i.downloadPackage(pkg, progressCallback)
-		if err != nil {
-			progressCallback(interfaces.InstallProgress{
-				Package:     pkg,
-				Status:      "failed",
-				Progress:    0,
-				Message:     "Erro ao baixar",
-				Error:       err,
-				IsCompleted: true,
-			})
-			return fmt.Errorf("download failed: %w", err)
-		}
-	} else {
-		// No download: run install command from temp dir (e.g. apt, curl|bash)
-		downloadPath = filepath.Join(i.tempDir, pkg.ID)
-		if err := os.MkdirAll(downloadPath, 0750); err != nil {
-			progressCallback(interfaces.InstallProgress{
-				Package:     pkg,
-				Status:      "failed",
-				Progress:    0,
-				Message:     "Erro ao preparar instalação",
-				Error:       err,
-				IsCompleted: true,
-			})
-			return fmt.Errorf("prepare install dir: %w", err)
-		}
-		progressCallback(interfaces.InstallProgress{
-			Package:  pkg,
-			Status:   "downloading",
-			Progress: 60,
-			Message:  "Preparando instalação...",
-			CanAbort: false,
-		})
+	kind := pkg.ResolveInstallKind()
+	s, ok := i.strategies[kind]
+	if !ok || s == nil {
+		return fmt.Errorf("no installer strategy for kind %q", kind)
 	}
-
-	// Installation phase
-	progressCallback(interfaces.InstallProgress{
-		Package:  pkg,
-		Status:   "installing",
-		Progress: 70,
-		Message:  "Instalando...",
-		CanAbort: false,
-	})
-
-	if err := i.installPackage(pkg, downloadPath); err != nil {
-		progressCallback(interfaces.InstallProgress{
-			Package:     pkg,
-			Status:      "failed",
-			Progress:    70,
-			Message:     "Erro ao instalar",
-			Error:       err,
-			IsCompleted: true,
-		})
-		return fmt.Errorf("installation failed: %w", err)
-	}
-
-	// Complete
-	progressCallback(interfaces.InstallProgress{
-		Package:     pkg,
-		Status:      "complete",
-		Progress:    100,
-		Message:     "Instalação concluída com sucesso!",
-		IsCompleted: true,
-	})
-
-	return nil
+	return s.install(i, pkg, progressCallback)
 }
 
 // downloadPackage downloads a package and reports progress
@@ -218,25 +174,30 @@ func (i *DefaultPackageInstaller) downloadPackage(pkg *entities.Package, progres
 	return tempFile, nil
 }
 
-// installPackage installs a downloaded package
-func (i *DefaultPackageInstaller) installPackage(pkg *entities.Package, downloadPath string) error {
-	if pkg.InstallCmd == "" {
-		return nil
+func (i *DefaultPackageInstaller) installHomesteadUtility(pkg *entities.Package) error {
+	rel := strings.TrimSpace(pkg.UtilityScriptPath)
+	scriptPath := filepath.Join(i.rootDir, rel)
+	if _, err := os.Stat(scriptPath); err != nil {
+		return fmt.Errorf("script não encontrado em %s: %w", scriptPath, err)
 	}
-
-	// Replace placeholders in install command
-	installCmd := strings.ReplaceAll(pkg.InstallCmd, "install.sh", downloadPath)
-	installCmd = strings.ReplaceAll(installCmd, "cursor.AppImage", downloadPath)
-	installCmd = strings.ReplaceAll(installCmd, "antigravity.deb", downloadPath)
-	installCmd = strings.ReplaceAll(installCmd, "{{download_path}}", downloadPath)
-
-	// Execute install command
-	cmd := exec.Command("bash", "-c", installCmd)
+	currentUser, err := user.Current()
+	if err != nil {
+		return fmt.Errorf("utilizador atual: %w", err)
+	}
+	var cmd *exec.Cmd
+	if pkg.RequiresSudo {
+		cmd = exec.Command("sudo", "-E", "bash", scriptPath)
+	} else {
+		cmd = exec.Command("bash", scriptPath)
+	}
+	cmd.Env = append(os.Environ(),
+		fmt.Sprintf("REAL_USER=%s", currentUser.Username),
+		fmt.Sprintf("REAL_HOME=%s", currentUser.HomeDir),
+		fmt.Sprintf("HOMESTEAD_ROOT=%s", i.rootDir),
+	)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Dir = filepath.Dir(downloadPath)
-
 	return cmd.Run()
 }
 
@@ -260,12 +221,10 @@ func (i *DefaultPackageInstaller) Uninstall(pkg *entities.Package) error {
 
 // CanInstall checks if the system can install this package
 func (i *DefaultPackageInstaller) CanInstall(pkg *entities.Package) bool {
-	// Check if we have wget or curl for downloading
-	if _, err := exec.LookPath("wget"); err == nil {
-		return true
+	kind := pkg.ResolveInstallKind()
+	s, ok := i.strategies[kind]
+	if !ok || s == nil {
+		return false
 	}
-	if _, err := exec.LookPath("curl"); err == nil {
-		return true
-	}
-	return true // We use Go's http.Get, so always true
+	return s.canInstall(i, pkg)
 }

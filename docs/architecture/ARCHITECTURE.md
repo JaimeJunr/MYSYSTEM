@@ -2,8 +2,11 @@
 
 Documento de arquitetura e padrões de projeto para o Homestead.
 
+**Ordem de leitura:** [VERTICAL_PATTERNS.md](VERTICAL_PATTERNS.md) define a pilha de padrões **de cima para baixo** (TUI → aplicação → domínio → infra). Este ficheiro aprofunda princípios, camadas e padrões com mais detalhe.
+
 ## 📋 Índice
 
+- [Padrões (visão vertical)](VERTICAL_PATTERNS.md) — mapa top-down do sistema
 - [Visão Geral](#visão-geral)
 - [Princípios Arquiteturais](#princípios-arquiteturais)
 - [Camadas da Aplicação](#camadas-da-aplicação)
@@ -113,52 +116,29 @@ Homestead segue uma **arquitetura em camadas** (Layered Architecture) com princ�
 
 ### 2. Application Layer
 
-**Responsabilidade**: Casos de uso e orquestração
+**Responsabilidade**: Orquestração de fluxos que o utilizador dispara no TUI — validar inputs, compor chamadas ao domínio e à infraestrutura via interfaces.
 
-**Localização**: `internal/app/` (a criar)
+**Localização**: `internal/app/services/`
 
-**Componentes**:
+**Componentes** (serviços de aplicação):
 
-- `usecases/` - Use cases específicos
-  - `execute_script.go`
-  - `install_package.go`
-  - `export_system.go`
-- `services/` - Application services
-  - `script_service.go`
-  - `installer_service.go`
+- `script_service.go` — carregar e executar scripts catalogados
+- `installer_service.go` — instalação de pacotes do catálogo
+- `config_service.go`, `plugin_service.go`, `wizard_service.go`, `repo_service.go` — configuração, Zsh e repositório de dotfiles
 
-**Exemplo**:
-
-```go
-type ExecuteScriptUseCase struct {
-    executor domain.ScriptExecutor
-}
-
-func (uc *ExecuteScriptUseCase) Execute(scriptID string) error {
-    // 1. Validar input
-    // 2. Buscar script
-    // 3. Executar
-    // 4. Logar resultado
-}
-```
+Não existe hoje uma pasta separada `usecases/`; a orquestração vive nestes serviços. Para novos fluxos grandes, pode-se extrair um use case explícito sem mudar a regra de dependência.
 
 ### 3. Domain Layer
 
-**Responsabilidade**: Lógica de negócio e entidades
+**Responsabilidade**: Lógica de negócio, entidades e contratos (portas) independentes de UI e de IO.
 
-**Localização**: `internal/domain/` (a criar)
+**Localização**: `internal/domain/`
 
 **Componentes**:
 
-- `entities/` - Entidades do domínio
-  - `script.go`
-  - `installer.go`
-  - `package.go`
-  - `system_state.go`
-- `interfaces/` - Contratos
-  - `executor.go`
-  - `repository.go`
-  - `installer.go`
+- `entities/` — `Script`, `Package`, e outras entidades do problema
+- `interfaces/` — `ScriptExecutor`, repositórios, contratos de instalação
+- `types/` — categorias, tipos de instalação, erros de domínio quando aplicável
 
 **Exemplo**:
 
@@ -188,21 +168,17 @@ type ScriptRepository interface {
 
 ### 4. Infrastructure Layer
 
-**Responsabilidade**: Implementações concretas e integrações externas
+**Responsabilidade**: Implementações concretas e integrações externas (processos, ficheiros, rede, formatos).
 
-**Localização**: `internal/infrastructure/` (a criar)
+**Localização**: `internal/infrastructure/`
 
-**Componentes**:
+**Componentes** (evolutivo; ver árvore do repositório):
 
-- `executor/` - Executores concretos
-  - `bash_executor.go`
-  - `docker_executor.go`
-- `repository/` - Repositórios concretos
-  - `script_repository.go` (in-memory ou file-based)
-  - `package_repository.go`
-- `apt/` - Integração com apt
-- `snap/` - Integração com snap
-- `fs/` - File system operations
+- `executor/` — execução bash (`bash_executor.go`) e política sudo/TTY
+- `repository/` — catálogos em memória, scripts utilitários, definições de instaladores
+- `installer/` — estratégias de instalação e orquestração de pacotes
+- `catalog/` — parse e carga de metadados (ex. JSON de instaladores)
+- `config/`, `templates/`, `plugins/`, `preferences/` — persistência e extensão conforme o código atual
 
 ## 🎨 Padrões de Projeto
 
@@ -610,9 +586,9 @@ func NewScriptService(
 
 // main.go - wiring (detalhes em cmd/homestead/main.go)
 func main() {
-    // … infra + services.NewScriptService, NewInstallerService, NewConfigService, NewRepoService …
-    model := tui.NewModel(scriptService, installerService, configService, repoService, catalogURL)
-    tea.NewProgram(model, tea.WithAltScreen()).Run()
+    // … preferences.Load, catalog.EffectiveCatalogURL, infra + services …
+    model := tui.NewModel(scriptService, installerService, configService, repoService, catalogURL, prefs, prefsPath, catalogEnvSet)
+    tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion()).Run()
 }
 ```
 

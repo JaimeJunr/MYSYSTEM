@@ -10,6 +10,8 @@ import (
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/config"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/executor"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/installer"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/preferences"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/profilestate"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/repository"
 	"github.com/JaimeJunr/Homestead/internal/tui"
 )
@@ -25,21 +27,17 @@ func skipIfShortIntegration(t *testing.T) {
 func TestIntegration_ScriptsAndTUI(t *testing.T) {
 	skipIfShortIntegration(t)
 
-	// Create dependencies - Scripts
 	scriptRepo := repository.NewInMemoryScriptRepository()
 	scriptExec := executor.NewBashExecutor()
 	scriptService := services.NewScriptService(scriptRepo, scriptExec)
 
-	// Create dependencies - Installers
 	packageRepo := repository.NewInMemoryPackageRepository()
 	packageInstaller := installer.NewDefaultPackageInstaller()
 	installerService := services.NewInstallerService(packageRepo, packageInstaller)
 
-	// Create dependencies - Config
 	configManager := config.NewFileConfigManager("")
 	configService := services.NewConfigService(configManager)
 
-	// Get all scripts
 	allScripts, err := scriptService.GetAllScripts()
 	if err != nil {
 		t.Fatalf("Failed to get scripts: %v", err)
@@ -49,13 +47,13 @@ func TestIntegration_ScriptsAndTUI(t *testing.T) {
 		t.Fatal("No scripts found")
 	}
 
-	// Create TUI model (empty catalog URL skips remote fetch in Init)
 	repoService, _ := services.NewRepoService("")
-	model := tui.NewModel(scriptService, installerService, configService, repoService, "")
+	prefs := preferences.DefaultPreferences()
+	prof := &profilestate.State{}
+	model := tui.NewModel(scriptService, installerService, configService, repoService, "", prefs, "", false, prof, "")
 
-	// Verify model initializes correctly
 	if model.Init() == nil {
-		t.Error("Expected Init() to return spinner tick command")
+		t.Error("Expected Init() to return a non-nil command batch")
 	}
 
 	t.Logf("Integration test successful: %d scripts available, TUI initialized", len(allScripts))
@@ -69,7 +67,7 @@ func TestIntegration_AllCategoriesHaveScripts(t *testing.T) {
 	scriptExec := executor.NewBashExecutor()
 	service := services.NewScriptService(scriptRepo, scriptExec)
 
-	categories := []string{"cleanup", "monitoring", "utilities"}
+	categories := []string{"cleanup", "monitoring", "checkup", "utilities"}
 
 	for _, category := range categories {
 		scripts, err := service.GetScriptsByCategory(types.Category(category))

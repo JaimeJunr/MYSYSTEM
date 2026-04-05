@@ -12,7 +12,7 @@ func TestGetAllScripts(t *testing.T) {
 	}
 
 	// Verify we have the expected scripts
-	expectedCount := 5
+	expectedCount := 10
 	if len(scripts) != expectedCount {
 		t.Errorf("Expected %d scripts, got %d", expectedCount, len(scripts))
 	}
@@ -44,7 +44,7 @@ func TestGetScriptsByCategory(t *testing.T) {
 		description  string
 	}{
 		{CategoryCleanup, 3, "cleanup scripts"},
-		{CategoryMonitoring, 2, "monitoring scripts"},
+		{CategoryMonitoring, 7, "monitoring scripts"},
 		{CategoryInstall, 0, "install scripts (none yet)"},
 	}
 

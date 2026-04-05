@@ -23,7 +23,6 @@ func NewInMemoryScriptRepository() interfaces.ScriptRepository {
 		scripts: make(map[string]*entities.Script),
 	}
 
-	// Initialize with default scripts
 	repo.initializeDefaultScripts()
 
 	return repo
@@ -33,33 +32,81 @@ func NewInMemoryScriptRepository() interfaces.ScriptRepository {
 func (r *InMemoryScriptRepository) initializeDefaultScripts() {
 	defaultScripts := []entities.Script{
 		{
-			ID:           "cleanup-full",
-			Name:         "Limpeza Completa (SSD)",
-			Description:  "Orquestrador completo de limpeza do sistema",
-			Path:         "scripts/cleanup/limpar_ssd.sh",
-			Category:     types.CategoryCleanup,
-			RequiresSudo: true,
+			ID:             "cleanup-full",
+			Name:           "Limpeza Completa (SSD)",
+			Description:    "Orquestrador completo de limpeza do sistema",
+			Path:           "scripts/cleanup/limpar_ssd.sh",
+			Category:       types.CategoryCleanup,
+			RequiresSudo:   true,
+			SupportsDryRun: true,
 		},
 		{
-			ID:           "cleanup-general",
-			Name:         "Limpeza Geral (Caches)",
-			Description:  "Limpa caches de Docker, Poetry, npm, apt, etc.",
-			Path:         "scripts/cleanup/limpar_geral.sh",
-			Category:     types.CategoryCleanup,
-			RequiresSudo: true,
+			ID:             "cleanup-general",
+			Name:           "Limpeza Geral (Caches)",
+			Description:    "Limpa caches de Docker, Poetry, npm, apt, etc.",
+			Path:           "scripts/cleanup/limpar_geral.sh",
+			Category:       types.CategoryCleanup,
+			RequiresSudo:   true,
+			SupportsDryRun: true,
 		},
 		{
-			ID:           "cleanup-large",
-			Name:         "Buscar Arquivos Grandes",
-			Description:  "Encontra e remove arquivos/pastas grandes (>100MB)",
-			Path:         "scripts/cleanup/limpar_grandes.sh",
-			Category:     types.CategoryCleanup,
-			RequiresSudo: true,
+			ID:             "cleanup-large",
+			Name:           "Buscar Arquivos Grandes",
+			Description:    "Encontra e remove arquivos/pastas grandes (>100MB)",
+			Path:           "scripts/cleanup/limpar_grandes.sh",
+			Category:       types.CategoryCleanup,
+			RequiresSudo:   true,
+			SupportsDryRun: false,
+		},
+		{
+			ID:             "cleanup-flatpak-snap",
+			Name:           "Flatpak (unused) e Snap desativado",
+			Description:    "flatpak uninstall --unused; remove revisões snap disabled",
+			Path:           "scripts/cleanup/limpar_flatpak_snap.sh",
+			Category:       types.CategoryCleanup,
+			RequiresSudo:   true,
+			SupportsDryRun: true,
+		},
+		{
+			ID:             "cleanup-journal-logs",
+			Name:           "Journal systemd e /var/log",
+			Description:    "journalctl --vacuum-time; lista maiores em /var/log",
+			Path:           "scripts/cleanup/limpar_journal.sh",
+			Category:       types.CategoryCleanup,
+			RequiresSudo:   true,
+			SupportsDryRun: true,
+		},
+		{
+			ID:             "cleanup-kernels-old",
+			Name:           "Kernels antigos (apt autoremove)",
+			Description:    "Sistemas Debian/Ubuntu: apt autoremove/autoclean",
+			Path:           "scripts/cleanup/limpar_kernels_antigos.sh",
+			Category:       types.CategoryCleanup,
+			RequiresSudo:   true,
+			SupportsDryRun: true,
+		},
+		{
+			ID:             "cleanup-thumbnails-only",
+			Name:           "Miniaturas (~/.cache/thumbnails)",
+			Description:    "Apaga cache de thumbnails (regenera ao navegar)",
+			Path:           "scripts/cleanup/limpar_thumbnails.sh",
+			Category:       types.CategoryCleanup,
+			RequiresSudo:   true,
+			SupportsDryRun: true,
+		},
+		{
+			ID:             "cleanup-lang-caches",
+			Name:           "Caches de linguagens (Go, Rust, npm…)",
+			Description:    "go clean, cargo, npm, pnpm, yarn, pip, poetry, gradle, maven",
+			Path:           "scripts/cleanup/limpar_caches_linguagens.sh",
+			Category:       types.CategoryCleanup,
+			RequiresSudo:   true,
+			SupportsDryRun: true,
 		},
 		{
 			ID:            "monitor-battery",
 			Name:          "Monitor de Bateria",
-			Description:   "Carga, carregador e detalhes da bateria (atualiza automaticamente)",
+			Description:   "Carga, carregador e detalhes da bateria",
 			Path:          "",
 			Category:      types.CategoryMonitoring,
 			RequiresSudo:  false,
@@ -73,6 +120,122 @@ func (r *InMemoryScriptRepository) initializeDefaultScripts() {
 			Category:      types.CategoryMonitoring,
 			RequiresSudo:  false,
 			NativeMonitor: entities.NativeMonitorMemory,
+		},
+		{
+			ID:            "monitor-disk",
+			Name:          "Espaço em disco",
+			Description:   "Uso por ponto de montagem (statfs)",
+			Path:          "",
+			Category:      types.CategoryMonitoring,
+			RequiresSudo:  false,
+			NativeMonitor: entities.NativeMonitorDisk,
+		},
+		{
+			ID:            "monitor-load",
+			Name:          "Carga da CPU",
+			Description:   "Load average (/proc/loadavg)",
+			Path:          "",
+			Category:      types.CategoryMonitoring,
+			RequiresSudo:  false,
+			NativeMonitor: entities.NativeMonitorLoad,
+		},
+		{
+			ID:            "monitor-network",
+			Name:          "Rede (interfaces)",
+			Description:   "RX/TX e vazão entre atualizações",
+			Path:          "",
+			Category:      types.CategoryMonitoring,
+			RequiresSudo:  false,
+			NativeMonitor: entities.NativeMonitorNetwork,
+		},
+		{
+			ID:            "monitor-thermal",
+			Name:          "Temperatura",
+			Description:   "thermal_zone e hwmon (sysfs)",
+			Path:          "",
+			Category:      types.CategoryMonitoring,
+			RequiresSudo:  false,
+			NativeMonitor: entities.NativeMonitorThermal,
+		},
+		{
+			ID:            "monitor-systemd-user",
+			Name:          "systemd usuário (falhas)",
+			Description:   "Unidades --user em estado failed",
+			Path:          "",
+			Category:      types.CategoryMonitoring,
+			RequiresSudo:  false,
+			NativeMonitor: entities.NativeMonitorSystemdUser,
+		},
+		{
+			ID:           "checkup-summary",
+			Name:         "Resumo de alertas (verificação rápida)",
+			Description:  "Só leitura: disco, RAM, carga, journal, snap, kernels…",
+			Path:         "scripts/checkup/verificacao_rapida.sh",
+			Category:     types.CategoryCheckup,
+			RequiresSudo: false,
+		},
+		{
+			ID:            "checkup-battery",
+			Name:          "Monitor de Bateria",
+			Description:   "Carga, carregador e detalhes da bateria",
+			Path:          "",
+			Category:      types.CategoryCheckup,
+			RequiresSudo:  false,
+			NativeMonitor: entities.NativeMonitorBattery,
+		},
+		{
+			ID:            "checkup-memory",
+			Name:          "Uso de Memória",
+			Description:   "Uso de memória RAM e swap",
+			Path:          "",
+			Category:      types.CategoryCheckup,
+			RequiresSudo:  false,
+			NativeMonitor: entities.NativeMonitorMemory,
+		},
+		{
+			ID:            "checkup-disk",
+			Name:          "Espaço em disco",
+			Description:   "Uso por ponto de montagem (statfs)",
+			Path:          "",
+			Category:      types.CategoryCheckup,
+			RequiresSudo:  false,
+			NativeMonitor: entities.NativeMonitorDisk,
+		},
+		{
+			ID:            "checkup-load",
+			Name:          "Carga da CPU",
+			Description:   "Load average (/proc/loadavg)",
+			Path:          "",
+			Category:      types.CategoryCheckup,
+			RequiresSudo:  false,
+			NativeMonitor: entities.NativeMonitorLoad,
+		},
+		{
+			ID:            "checkup-network",
+			Name:          "Rede (interfaces)",
+			Description:   "RX/TX e vazão entre atualizações",
+			Path:          "",
+			Category:      types.CategoryCheckup,
+			RequiresSudo:  false,
+			NativeMonitor: entities.NativeMonitorNetwork,
+		},
+		{
+			ID:            "checkup-thermal",
+			Name:          "Temperatura",
+			Description:   "thermal_zone e hwmon (sysfs)",
+			Path:          "",
+			Category:      types.CategoryCheckup,
+			RequiresSudo:  false,
+			NativeMonitor: entities.NativeMonitorThermal,
+		},
+		{
+			ID:            "checkup-systemd-user",
+			Name:          "systemd usuário (falhas)",
+			Description:   "Unidades --user em estado failed",
+			Path:          "",
+			Category:      types.CategoryCheckup,
+			RequiresSudo:  false,
+			NativeMonitor: entities.NativeMonitorSystemdUser,
 		},
 	}
 
@@ -126,10 +289,21 @@ func (r *InMemoryScriptRepository) FindByCategory(category types.Category) ([]en
 	}
 
 	sort.Slice(scripts, func(i, j int) bool {
+		wi, wj := scriptListSortWeight(scripts[i].ID), scriptListSortWeight(scripts[j].ID)
+		if wi != wj {
+			return wi < wj
+		}
 		return scripts[i].Name < scripts[j].Name
 	})
 
 	return scripts, nil
+}
+
+func scriptListSortWeight(id string) int {
+	if id == "checkup-summary" {
+		return 0
+	}
+	return 1
 }
 
 // Save saves a script

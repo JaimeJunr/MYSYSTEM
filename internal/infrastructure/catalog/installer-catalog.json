@@ -8,7 +8,7 @@
       "version": "latest",
       "category": "ide",
       "download_url": "https://storage.googleapis.com/claude-code/install.sh",
-      "install_cmd": "bash install.sh",
+      "install_cmd": "bash {{download_path}}",
       "check_cmd": "which claude-code",
       "project_url": "https://github.com/anthropics/claude-code"
     },
@@ -19,7 +19,7 @@
       "version": "latest",
       "category": "ide",
       "download_url": "https://download.cursor.sh/linux/appImage/x64",
-      "install_cmd": "chmod +x cursor.AppImage \u0026\u0026 sudo mv cursor.AppImage /usr/local/bin/cursor",
+      "install_cmd": "chmod +x {{download_path}} \u0026\u0026 sudo mv {{download_path}} /usr/local/bin/cursor",
       "check_cmd": "which cursor",
       "project_url": "https://cursor.com"
     },
@@ -30,7 +30,7 @@
       "version": "latest",
       "category": "ide",
       "download_url": "https://antigravity.dev/download/linux",
-      "install_cmd": "sudo dpkg -i antigravity.deb || sudo apt-get install -f -y",
+      "install_cmd": "sudo dpkg -i {{download_path}} || sudo apt-get install -f -y",
       "check_cmd": "which antigravity",
       "project_url": "https://antigravity.dev"
     },

@@ -38,6 +38,10 @@ func (r *InMemoryPackageRepository) bootstrapFromEmbeddedCatalog() {
 		pkg := p
 		_ = r.Save(&pkg)
 	}
+	for _, p := range defaultUtilityPackages() {
+		pkg := p
+		_ = r.Save(&pkg)
+	}
 }
 
 // FindAll returns all packages

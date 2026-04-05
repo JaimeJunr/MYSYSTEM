@@ -62,6 +62,15 @@ type ZshRepoModel struct {
 }
 
 // NewZshRepoModel creates a new repo wizard model
+func (m *ZshRepoModel) isTextInputView() bool {
+	switch m.currentView {
+	case ZshRepoViewNewRepo, ZshRepoViewExistingRepo, ZshRepoViewNewRepoGhName:
+		return true
+	default:
+		return false
+	}
+}
+
 func NewZshRepoModel(repoService *services.RepoService, configService *services.ConfigService) ZshRepoModel {
 	ti := textinput.New()
 	ti.Placeholder = "https://github.com/user/dotfiles.git"

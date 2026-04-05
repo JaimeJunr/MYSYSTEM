@@ -4,13 +4,17 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/JaimeJunr/Homestead/internal/app/services"
+	"github.com/JaimeJunr/Homestead/internal/homesteadcli"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/catalog"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/config"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/executor"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/installer"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/preferences"
+	"github.com/JaimeJunr/Homestead/internal/infrastructure/profilestate"
 	"github.com/JaimeJunr/Homestead/internal/infrastructure/repository"
 	"github.com/JaimeJunr/Homestead/internal/tui"
 )
@@ -19,6 +23,18 @@ import (
 var version = "dev"
 
 func main() {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "help", "-h", "--help":
+			homesteadcli.PrintHelp(os.Stdout)
+			return
+		case "export-profile":
+			os.Exit(homesteadcli.RunExportProfile(os.Args[2:], version, os.Stdout, os.Stderr))
+		case "shell-init":
+			os.Exit(homesteadcli.RunShellInit(os.Args[2:], os.Stderr))
+		}
+	}
+
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
 	if *showVersion {
@@ -28,13 +44,39 @@ func main() {
 
 	// Dependency Injection (Manual Wiring)
 
+	prefsPath, err := preferences.DefaultPath()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Homestead: preferências: %v\n", err)
+		os.Exit(1)
+	}
+	prefs, err := preferences.Load(prefsPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Homestead: carregar preferências: %v\n", err)
+		os.Exit(1)
+	}
+
+	profilePath, err := profilestate.DefaultPath()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Homestead: perfil: %v\n", err)
+		os.Exit(1)
+	}
+	profState, err := profilestate.Load(profilePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Homestead: carregar perfil: %v\n", err)
+		os.Exit(1)
+	}
+	profPtr := &profState
+
+	catalogEnvSet := strings.TrimSpace(os.Getenv("HOMESTEAD_CATALOG_URL")) != ""
+	catalogURL := catalog.EffectiveCatalogURL(prefs.CatalogURL)
+
 	// Infrastructure layer - Scripts
 	scriptRepo := repository.NewInMemoryScriptRepository()
-	scriptExecutor := executor.NewBashExecutor()
+	scriptExecutor := executor.NewBashExecutorWithRoot(prefs.ScriptRoot)
 
 	// Infrastructure layer - Packages/Installers
 	packageRepo := repository.NewInMemoryPackageRepository()
-	packageInstaller := installer.NewDefaultPackageInstaller()
+	packageInstaller := installer.NewDefaultPackageInstallerWithRoot(prefs.ScriptRoot)
 
 	// Application layer
 	scriptService := services.NewScriptService(scriptRepo, scriptExecutor)
@@ -45,12 +87,19 @@ func main() {
 
 	configManager := config.NewFileConfigManager("")
 	configService := services.NewConfigService(configManager)
-	repoService, _ := services.NewRepoService("~/.config/" + services.DefaultRepoDirName)
 
-	catalogURL := catalog.ResolveCatalogURL()
+	dotfilesPath := prefs.DotfilesRepo
+	if strings.TrimSpace(dotfilesPath) == "" {
+		dotfilesPath = preferences.DefaultDotfilesRepo()
+	}
+	repoService, err := services.NewRepoService(dotfilesPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Homestead: repositório dotfiles: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Presentation layer
-	model := tui.NewModel(scriptService, installerService, configService, repoService, catalogURL)
+	model := tui.NewModel(scriptService, installerService, configService, repoService, catalogURL, prefs, prefsPath, catalogEnvSet, profPtr, profilePath)
 
 	// Create the TUI program
 	p := tea.NewProgram(
